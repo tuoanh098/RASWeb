@@ -2,63 +2,63 @@ package com.ras.web.api.account;
 
 import com.ras.service.account.*;
 import com.ras.service.account.dto.*;
-import org.springframework.data.domain.Page;
+import com.ras.web.api.common.PageResponse;
+import org.springframework.data.domain.*;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/accounts")
 @CrossOrigin
 public class AccountController {
 
-    private final AccountQueryService query;
-    private final AccountCommandService command;
+    private final AccountQueryService queryService;
+    private final AccountCommandService commandService;
 
-    public AccountController(AccountQueryService query, AccountCommandService command) {
-        this.query = query; this.command = command;
+    public AccountController(AccountQueryService queryService, AccountCommandService commandService) {
+        this.queryService = queryService;
+        this.commandService = commandService;
     }
 
     @GetMapping
-    public Map<String, Object> list(
-            @RequestParam(required = false) String kw,
-            @RequestParam(required = false) String role,
-            @RequestParam(required = false) Boolean active,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+    public PageResponse<AccountListDto> list(
+        @RequestParam(name="page", defaultValue="0") int page,
+        @RequestParam(name="size", defaultValue="10") int size,
+        @RequestParam(name="q", required=false) String q,
+        // nhận filter với cả 2 tên
+        @RequestParam(name="vai_tro", required=false) String vaiTro,
+        @RequestParam(name="role", required=false) String role,
+        @RequestParam(name="hoat_dong", required=false) Boolean hoatDong,
+        @RequestParam(name="active", required=false) Boolean active
     ) {
-        Page<AccountListDto> p = query.list(kw, role, page, size, active);
-        return Map.of(
-                "items", p.getContent(),
-                "page", p.getNumber(),
-                "size", p.getSize(),
-                "totalElements", p.getTotalElements(),
-                "totalPages", p.getTotalPages()
-        );
+        String roleFilter = (vaiTro != null && !vaiTro.isBlank()) ? vaiTro : role;
+        Boolean activeFilter = (hoatDong != null) ? hoatDong : active;
+
+        var p = queryService.list(q, roleFilter, activeFilter, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id")));
+        return PageResponse.<AccountListDto>builder()
+            .items(p.getContent())
+            .page(p.getNumber())
+            .size(p.getSize())
+            .totalElements(p.getTotalElements())
+            .totalPages(p.getTotalPages())
+            .build();
     }
 
     @GetMapping("/{id}")
-    public AccountDetailDto get(@PathVariable Long id) {
-        return query.get(id);
-    }
+    public AccountDetailDto get(@PathVariable("id") Long id) { return queryService.get(id); }
 
     @PostMapping
-    public Map<String, Long> create(@RequestBody AccountUpsertReq req) {
-        return Map.of("id", command.create(req));
-    }
+    public AccountDetailDto create(@RequestBody AccountUpsertReq body) { return commandService.create(body); }
 
     @PutMapping("/{id}")
-    public void update(@PathVariable Long id, @RequestBody AccountUpsertReq req) {
-        command.update(id, req);
+    public AccountDetailDto update(@PathVariable("id") Long id, @RequestBody AccountUpsertReq body) {
+        return commandService.update(id, body);
+    }
+
+    @PutMapping("/{id}/password")
+    public void changePassword(@PathVariable("id") Long id, @RequestBody AccountUpsertReq body) {
+        commandService.changePassword(id, body.new_password());
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        command.delete(id);
-    }
-
-    @PostMapping("/{id}/reset-password")
-    public void resetPassword(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        command.resetPassword(id, body.getOrDefault("new_password", ""));
-    }
+    public void delete(@PathVariable("id") Long id) { commandService.delete(id); }
 }

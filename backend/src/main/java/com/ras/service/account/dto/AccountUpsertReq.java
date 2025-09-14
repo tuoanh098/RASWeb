@@ -1,10 +1,16 @@
 package com.ras.service.account.dto;
 
-public class AccountUpsertReq {
-    public String username;
-    public String password;   // chỉ khi tạo mới hoặc đổi mật khẩu
-    public String email;
-    public String vai_tro;    // TEACHER | STAFF | MANAGER
-    public Boolean hoat_dong;
-    public Long id_nhan_vien;
-}
+public record AccountUpsertReq(
+    String username,
+    String email,
+    String new_password,
+
+    // chấp nhận cả 2 khoá tên, ưu tiên *tiếng Việt*
+    String vai_tro,
+    String role,
+
+    Long id_nhan_vien,
+
+    Boolean hoat_dong,
+    Boolean active
+) {}

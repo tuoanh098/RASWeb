@@ -125,13 +125,15 @@ export default function Students() {
   }
 
   async function handleDelete(row) {
-    if (!confirm(`Xoá học viên "${row.fullName}"?`)) return
+    if (!confirm(`Xoá học viên "${row.fullName}"?`)) return;
     try {
-      if (!row.id) return alert('Bản ghi không có ID hợp lệ')
-      await  StudentsApi.delete(row.id)
-      setReloadToken(x => x + 1)
+      await StudentsApi.delete(row.id); // req() giờ trả null, không lỗi
+      alert("Đã xoá học viên thành công.");
+      // Reload danh sách:
+      setReloadToken(t => t + 1);
+      // Hoặc nếu bạn không dùng reloadToken, có thể: setPage(0);
     } catch (e) {
-      alert(`Lỗi xoá: ${e.message || e}`)
+      alert(`Lỗi xoá: ${e.message || e}`);
     }
   }
 

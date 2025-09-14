@@ -2,16 +2,20 @@ package com.ras.service.account.dto;
 
 import java.time.LocalDateTime;
 
-public class AccountDetailDto {
-    public Long id;
-    public String username;
-    public String email;
-    public String vai_tro;
-    public Boolean hoat_dong;
-    public LocalDateTime lan_dang_nhap_cuoi;
-    public Long id_nhan_vien;
-    public String ho_ten_nhan_vien;
+public record AccountDetailDto(
+    Long id,
+    String username,
+    String email,
 
-    public LocalDateTime ngay_tao;
-    public LocalDateTime ngay_sua;
-}
+    String vai_tro,
+    Boolean hoat_dong,
+    LocalDateTime lan_dang_nhap_cuoi,
+    Long id_nhan_vien,
+
+    String role,
+    Boolean active,
+    LocalDateTime last_login,
+
+    LocalDateTime ngay_tao,
+    LocalDateTime ngay_sua
+) {}

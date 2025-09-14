@@ -3,60 +3,65 @@ package com.ras.domain.account;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-import com.ras.domain.employee.Employee;
-
 @Entity
-@Table(name = "nguoi_dung")
+@Table(name = "nguoi_dung", uniqueConstraints = @UniqueConstraint(columnNames = "username"))
 public class NguoiDung {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "username", nullable = false, unique = true, length = 100)
+    @Column(name="username", nullable=false, length=100)
     private String username;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(name="password_hash", nullable=false, length=255)
     private String passwordHash;
 
-    @Column(name = "email", length = 190)
+    @Column(name="email", length=255)
     private String email;
 
-    @Column(name = "vai_tro", nullable = false, length = 20)
-    private String vaiTro; // TEACHER, STAFF, MANAGER
+    @Column(name="vai_tro", nullable=false, length=20) // TEACHER | STAFF | MANAGER
+    private String vaiTro;
 
-    @Column(name = "hoat_dong", nullable = false)
+    @Column(name="hoat_dong", nullable=false)
     private Boolean hoatDong = true;
 
-    @Column(name = "lan_dang_nhap_cuoi")
+    @Column(name="lan_dang_nhap_cuoi")
     private LocalDateTime lanDangNhapCuoi;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_nhan_vien", nullable = false, unique = true)
-    private Employee nhanVien;
+    @Column(name="id_nhan_vien")
+    private Long idNhanVien;
 
-    @Column(name = "ngay_tao", nullable = false)
-    private LocalDateTime ngayTao = LocalDateTime.now();
+    @Column(name="ngay_tao", updatable=false)
+    private LocalDateTime ngayTao;
 
-    @Column(name = "ngay_sua")
+    @Column(name="ngay_sua")
     private LocalDateTime ngaySua;
 
-    // Getters/Setters
+    @PrePersist
+    void prePersist() { ngayTao = LocalDateTime.now(); ngaySua = ngayTao; }
+
+    @PreUpdate
+    void preUpdate() { ngaySua = LocalDateTime.now(); }
+
+    // getters/setters
     public Long getId() { return id; }
     public String getUsername() { return username; }
-    public void setUsername(String v) { this.username = v; }
     public String getPasswordHash() { return passwordHash; }
-    public void setPasswordHash(String v) { this.passwordHash = v; }
     public String getEmail() { return email; }
-    public void setEmail(String v) { this.email = v; }
     public String getVaiTro() { return vaiTro; }
-    public void setVaiTro(String v) { this.vaiTro = v; }
     public Boolean getHoatDong() { return hoatDong; }
-    public void setHoatDong(Boolean v) { this.hoatDong = v; }
     public LocalDateTime getLanDangNhapCuoi() { return lanDangNhapCuoi; }
-    public void setLanDangNhapCuoi(LocalDateTime v) { this.lanDangNhapCuoi = v; }
-    public Employee getNhanVien() { return nhanVien; }
-    public void setNhanVien(Employee nv) { this.nhanVien = nv; }
+    public Long getIdNhanVien() { return idNhanVien; }
     public LocalDateTime getNgayTao() { return ngayTao; }
-    public void setNgayTao(LocalDateTime v) { this.ngayTao = v; }
     public LocalDateTime getNgaySua() { return ngaySua; }
-    public void setNgaySua(LocalDateTime v) { this.ngaySua = v; }
+
+    public void setId(Long id) { this.id = id; }
+    public void setUsername(String username) { this.username = username; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public void setEmail(String email) { this.email = email; }
+    public void setVaiTro(String vaiTro) { this.vaiTro = vaiTro; }
+    public void setHoatDong(Boolean hoatDong) { this.hoatDong = hoatDong; }
+    public void setLanDangNhapCuoi(LocalDateTime lanDangNhapCuoi) { this.lanDangNhapCuoi = lanDangNhapCuoi; }
+    public void setIdNhanVien(Long idNhanVien) { this.idNhanVien = idNhanVien; }
+    public void setNgayTao(LocalDateTime ngayTao) { this.ngayTao = ngayTao; }
+    public void setNgaySua(LocalDateTime ngaySua) { this.ngaySua = ngaySua; }
 }

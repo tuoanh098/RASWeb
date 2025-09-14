@@ -1,6 +1,8 @@
 server:
   port: 8080
-
+  error:
+    include-message: always
+    include-binding-errors: always
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/ras_music?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
@@ -31,5 +33,7 @@ app:
     
 logging:
   level:
+    org.springframework.web: INFO
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql.BasicBinder: trace
+    

@@ -1,16 +1,17 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+// src/state/AppContext.jsx (ví dụ)
+import React, { createContext, useContext } from "react";
 
-const AppContext = createContext(null);
+const AppContext = createContext({});
 
 export function AppProvider({ children }) {
-  const [branchId, setBranchId] = useState(null); // cơ sở đang chọn
+  // hard-code admin
+  const user = { username: "admin", role: "MANAGER" };
 
-  const value = useMemo(() => ({
-    branchId,
-    setBranchId,
-  }), [branchId]);
-
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider value={{ user }}>
+      {children}
+    </AppContext.Provider>
+  );
 }
 
 export function useApp() {

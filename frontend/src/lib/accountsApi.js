@@ -1,4 +1,3 @@
-// src/lib/accountsApi.js
 import { req, qs } from "./http.js";
 
 const AccountsApi = {

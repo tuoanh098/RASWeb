@@ -1,24 +1,38 @@
-// lib/http.js
-const DEV = import.meta.env?.DEV;
-const ENV_BASE = (import.meta.env?.VITE_API_BASE || "").replace(/\/+$/, "");
-export const API_BASE = DEV ? "" : ENV_BASE;
-
+// src/lib/http.js
 export function qs(obj = {}) {
-  const pairs = Object.entries(obj)
-    .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "undefined")
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`);
-  return pairs.length ? `?${pairs.join("&")}` : "";
+  const p = Object.entries(obj)
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join("&");
+  return p ? `?${p}` : "";
 }
 
-export async function req(method, url, body) {
-  const opt = { method, headers: { "Content-Type": "application/json" } };
-  if (body != null) opt.body = JSON.stringify(body);
-  const res = await fetch(API_BASE + url, opt);
+export async function req(method, url, body, options = {}) {
+  const isForm = body instanceof FormData;
+  const headers = isForm ? {} : { "Content-Type": "application/json" };
+  const res = await fetch(url, {
+    method,
+    headers: { ...headers, ...(options.headers || {}) },
+    body: isForm ? body : body != null ? JSON.stringify(body) : undefined,
+    credentials: "include",
+  });
+
+  // Response có thể không có body (204/205 hoặc content-length=0 hoặc không phải JSON)
+  const noBody =
+    res.status === 204 ||
+    res.status === 205 ||
+    res.headers.get("content-length") === "0" ||
+    !(res.headers.get("content-type") || "").includes("application/json");
+
   if (!res.ok) {
-    let text = "";
-    try { text = await res.text(); } catch {}
-    try { text = JSON.parse(text); } catch {}
-    throw new Error(typeof text === "string" && text ? text : JSON.stringify(text || { status: res.status }));
+    let msg = "";
+    try {
+      msg = noBody ? "" : JSON.stringify(await res.json());
+    } catch {
+      msg = await res.text();
+    }
+    throw new Error(msg || `${res.status} ${res.statusText}`);
   }
-  return res.status === 204 ? null : await res.json();
+
+  return noBody ? null : await res.json();
 }

@@ -1,60 +1,34 @@
 package com.ras.service.account;
 
-import com.ras.domain.account.*;
+import com.ras.domain.account.NguoiDungRepository;
 import com.ras.service.account.dto.*;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.criteria.*;
-import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@Transactional(readOnly = true)
 public class AccountQueryServiceImpl implements AccountQueryService {
 
     private final AccountRepository repo;
-    private final EntityManager em;
+    private final NguoiDungRepository jpaRepo;
 
-    public AccountQueryServiceImpl(AccountRepository repo, EntityManager em) {
-        this.repo = repo; this.em = em;
+    public AccountQueryServiceImpl(AccountRepository repo, NguoiDungRepository jpaRepo) {
+        this.repo = repo;
+        this.jpaRepo = jpaRepo;
     }
 
     @Override
-    public Page<AccountListDto> list(String kw, String role, int page, int size, Boolean active) {
-        CriteriaBuilder cb = em.getCriteriaBuilder();
-        CriteriaQuery<NguoiDung> cq = cb.createQuery(NguoiDung.class);
-        Root<NguoiDung> root = cq.from(NguoiDung.class);
-
-        Predicate p = cb.conjunction();
-        if (kw != null && !kw.isBlank()) {
-            String like = "%" + kw.trim().toLowerCase() + "%";
-            p = cb.and(p, cb.or(
-                    cb.like(cb.lower(root.get("username")), like),
-                    cb.like(cb.lower(root.get("email")), like),
-                    cb.like(cb.lower(root.join("nhanVien").get("hoTen")), like)
-            ));
-        }
-        if (role != null && !role.isBlank()) p = cb.and(p, cb.equal(root.get("vaiTro"), role));
-        if (active != null) p = cb.and(p, cb.equal(root.get("hoatDong"), active));
-
-        cq.where(p).orderBy(cb.desc(root.get("id")));
-
-        List<NguoiDung> rows = em.createQuery(cq)
-                .setFirstResult(page * size)
-                .setMaxResults(size)
-                .getResultList();
-
-        long total = em.createQuery(
-                cb.createQuery(Long.class).select(cb.count(root)).where(p)
-        ).getSingleResult();
-
-        var items = rows.stream().map(AccountMapper::toList).toList();
-        return new PageImpl<>(items, PageRequest.of(page, size), total);
+    public Page<AccountListDto> list(String q, String vaiTroOrRole, Boolean activeOrHoatDong, Pageable pageable) {
+        return repo.findPage(q, vaiTroOrRole, activeOrHoatDong, pageable).map(AccountMapper::toList);
     }
 
     @Override
     public AccountDetailDto get(Long id) {
-        var e = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Account not found: " + id));
+        var e = jpaRepo.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản"));
         return AccountMapper.toDetail(e);
     }
 }

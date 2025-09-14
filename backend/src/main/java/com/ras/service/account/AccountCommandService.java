@@ -1,10 +1,11 @@
 package com.ras.service.account;
 
-import com.ras.service.account.dto.AccountUpsertReq;
+import com.ras.service.account.dto.*;
 
 public interface AccountCommandService {
-    Long create(AccountUpsertReq req);
-    void update(Long id, AccountUpsertReq req);
+    AccountDetailDto create(AccountUpsertReq req);
+    AccountDetailDto update(Long id, AccountUpsertReq req);
     void delete(Long id);
-    void resetPassword(Long id, String newPassword);
+    void changePassword(Long id, String newPassword);
 }
+    

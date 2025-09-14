@@ -1,86 +1,86 @@
 package com.ras.service.account;
 
-import com.ras.domain.account.*;
-import com.ras.domain.employee.*;
-import com.ras.service.account.dto.AccountUpsertReq;
-import com.ras.domain.employee.EmployeeRepository;
+import com.ras.domain.account.NguoiDung;
+import com.ras.domain.account.NguoiDungRepository;
+import com.ras.service.account.dto.*;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@Transactional
 public class AccountCommandServiceImpl implements AccountCommandService {
 
-    private final AccountRepository repo;
-    private final EmployeeRepository employeeRepo;
-    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    private final NguoiDungRepository repo;
+    private final BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
 
-    public AccountCommandServiceImpl(AccountRepository repo, EmployeeRepository employeeRepo) {
-        this.repo = repo; this.employeeRepo = employeeRepo;
-    }
+    public AccountCommandServiceImpl(NguoiDungRepository repo) { this.repo = repo; }
 
     @Override
-    @Transactional
-    public Long create(AccountUpsertReq req) {
-        if (repo.existsByUsername(req.username)) throw new IllegalArgumentException("Username đã tồn tại");
-        if (repo.existsByNhanVien_Id(req.id_nhan_vien)) throw new IllegalArgumentException("Nhân viên đã có tài khoản");
-
-        Employee nv = employeeRepo.findById(req.id_nhan_vien)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên"));
+    public AccountDetailDto create(AccountUpsertReq r) {
+        if (r.username() == null || r.username().isBlank())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu username");
+        if (r.new_password() == null || r.new_password().isBlank())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu mật khẩu");
 
         NguoiDung e = new NguoiDung();
-        e.setUsername(req.username.trim());
-        if (req.password == null || req.password.isBlank()) throw new IllegalArgumentException("Mật khẩu bắt buộc");
-        e.setPasswordHash(encoder.encode(req.password));
-        e.setEmail(req.email);
-        e.setVaiTro(req.vai_tro);
-        e.setHoatDong(req.hoat_dong != null ? req.hoat_dong : true);
-        e.setNhanVien(nv);
-        e.setNgayTao(LocalDateTime.now());
-        repo.save(e);
-        return e.getId();
+        e.setUsername(r.username().trim());
+        e.setPasswordHash(bcrypt.encode(r.new_password()));
+        e.setEmail(r.email());
+        // ưu tiên tên Việt
+        String vaiTro = r.vai_tro() != null && !r.vai_tro().isBlank()
+                ? r.vai_tro().trim()
+                : (r.role() != null ? r.role().trim() : "STAFF");
+        e.setVaiTro(vaiTro);
+        e.setIdNhanVien(r.id_nhan_vien());
+        e.setHoatDong(r.hoat_dong() != null ? r.hoat_dong() : (r.active() != null ? r.active() : true));
+
+        try {
+            e = repo.save(e);
+            return AccountMapper.toDetail(e);
+        } catch (DataIntegrityViolationException dup) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username đã tồn tại");
+        }
     }
 
     @Override
-    @Transactional
-    public void update(Long id, AccountUpsertReq req) {
-        NguoiDung e = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Account not found"));
-        if (req.username != null && !req.username.equals(e.getUsername())) {
-            if (repo.existsByUsername(req.username)) throw new IllegalArgumentException("Username đã tồn tại");
-            e.setUsername(req.username.trim());
-        }
-        if (req.password != null && !req.password.isBlank()) {
-            e.setPasswordHash(encoder.encode(req.password));
-        }
-        e.setEmail(req.email);
-        if (req.vai_tro != null) e.setVaiTro(req.vai_tro);
-        if (req.hoat_dong != null) e.setHoatDong(req.hoat_dong);
+    public AccountDetailDto update(Long id, AccountUpsertReq r) {
+        var e = repo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản"));
+        if (r.username()!=null && !r.username().isBlank()) e.setUsername(r.username().trim());
+        if (r.email()!=null && !r.email().isBlank()) e.setEmail(r.email().trim());
+        if (r.vai_tro()!=null && !r.vai_tro().isBlank()) e.setVaiTro(r.vai_tro().trim());
+        else if (r.role()!=null && !r.role().isBlank()) e.setVaiTro(r.role().trim());
+        if (r.id_nhan_vien()!=null) e.setIdNhanVien(r.id_nhan_vien());
+        if (r.hoat_dong()!=null) e.setHoatDong(r.hoat_dong());
+        else if (r.active()!=null) e.setHoatDong(r.active());
+        if (r.new_password()!=null && !r.new_password().isBlank()) e.setPasswordHash(bcrypt.encode(r.new_password()));
 
-        if (req.id_nhan_vien != null && (e.getNhanVien()==null || !req.id_nhan_vien.equals(e.getNhanVien().getId()))) {
-            if (repo.existsByNhanVien_Id(req.id_nhan_vien)) throw new IllegalArgumentException("Nhân viên đã có tài khoản");
-            var nv = employeeRepo.findById(req.id_nhan_vien)
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên"));
-            e.setNhanVien(nv);
+        try {
+            e = repo.save(e);
+            return AccountMapper.toDetail(e);
+        } catch (DataIntegrityViolationException dup) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Username đã tồn tại");
         }
-
-        e.setNgaySua(LocalDateTime.now());
-        repo.save(e);
     }
 
     @Override
-    @Transactional
     public void delete(Long id) {
+        if (!repo.existsById(id))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản");
         repo.deleteById(id);
     }
 
     @Override
-    @Transactional
-    public void resetPassword(Long id, String newPassword) {
-        NguoiDung e = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Account not found"));
-        e.setPasswordHash(encoder.encode(newPassword));
-        e.setNgaySua(LocalDateTime.now());
+    public void changePassword(Long id, String newPassword) {
+        if (newPassword == null || newPassword.isBlank())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu mật khẩu mới");
+        var e = repo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản"));
+        e.setPasswordHash(bcrypt.encode(newPassword));
         repo.save(e);
     }
 }

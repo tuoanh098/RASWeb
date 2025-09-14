@@ -1,8 +1,7 @@
 // src/pages/TeamAccounts.jsx
 import React, { useEffect, useState } from "react";
 import AccountsApi from "../../lib/accountsApi.js";
-import { useDebounce } from "../lib/useDebounce.js";
-
+import { useDebounce } from "../../lib/useDebounce.js";
 function Field({ label, children }) {
   return (
     <label className="block">
@@ -31,7 +30,7 @@ export default function TeamAccounts() {
     username: "",
     role: "STAFF",
     active: true,
-    id_nhan_vien: null, // liên kết nhân viên
+    id_nhan_vien: null,
     new_password: "",
   });
 
