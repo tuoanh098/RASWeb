@@ -1,7 +1,9 @@
+// src/lib/accountsApi.js
 import { req, qs } from "./http.js";
+
 const AccountsApi = {
-  list({ page = 0, size = 10, q, role, active } = {}) {
-    return req("GET", `/api/accounts${qs({ page, size, q, role, active })}`);
+  list({ page = 0, size = 10, q } = {}) {
+    return req("GET", `/api/accounts${qs({ page, size, q })}`);
   },
   get(id) {
     if (id == null) throw new Error("Thiếu ID tài khoản");
@@ -17,12 +19,6 @@ const AccountsApi = {
   delete(id) {
     if (id == null) throw new Error("Thiếu ID tài khoản để xoá");
     return req("DELETE", `/api/accounts/${id}`);
-  },
-  resetPassword(id, newPassword) {
-    if (id == null) throw new Error("Thiếu ID tài khoản để reset mật khẩu");
-    return req("POST", `/api/accounts/${id}/reset-password`, {
-      new_password: newPassword,
-    });
   },
 };
 

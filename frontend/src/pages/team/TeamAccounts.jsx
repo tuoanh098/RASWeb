@@ -1,6 +1,6 @@
 // src/pages/TeamAccounts.jsx
 import React, { useEffect, useState } from "react";
-import AccountsApi from "../lib/accountsApi.js"; // 👈 default import (đồng nhất)
+import AccountsApi from "../../lib/accountsApi.js";
 import { useDebounce } from "../lib/useDebounce.js";
 
 function Field({ label, children }) {
