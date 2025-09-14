@@ -1,6 +1,5 @@
 import React from 'react'
 
-// Placeholder: sau này nối API payroll (bảng chấm công, buổi dạy, hệ số, thanh toán).
 export default function Payroll() {
   return (
     <div className="space-y-4">

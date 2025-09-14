@@ -1,99 +1,130 @@
-import React from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
-import { useApp } from '../state/AppContext.jsx'
+import React, { useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import { useApp } from "../state/AppContext.jsx";
 
-function BranchSwitcher() {
-  const { branchId, setBranchId } = useApp()
-  const branches = [
-    { id: 1, name: "Cơ sở 1" },
-    { id: 2, name: "Cơ sở 2" },
-    { id: 3, name: "Cơ sở 3" }, 
-  ]
+import rasLogo from "../assets/ras_logo.jpg";
+const LOGO_URL = rasLogo;
+
+function Item({ to, label, exact=false }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-white text-base font-semibold leading-tight">Cơ sở:</span>
-      <select
-        className="input w-32"
-        value={branchId ?? ''}
-        onChange={e => setBranchId(e.target.value === '' ? null : Number(e.target.value))}
-      >
-        <option value="">Tất cả</option>
-        {branches.map(b => (
-          <option key={b.id} value={b.id}>{b.name}</option>
-        ))}
-      </select>
-    </div>
-  )
+    <NavLink
+      to={to}
+      end={exact}
+      className={({ isActive }) =>
+        `block px-4 py-3 rounded-lg font-medium transition
+         ${isActive ? "bg-ras-purple text-white" : "text-ras-blue hover:bg-ras-purple/10"}`
+      }
+    >
+      {label}
+    </NavLink>
+  );
 }
 
-const tabs = [
-  { to: '/', label: 'Tổng quan' },
-  { to: '/classes', label: 'Lớp' },
-  { to: '/schedule', label: 'Lịch học' },
-  { to: '/students', label: 'Học viên' },
-  { to: '/staffs', label: 'Nhân lực' },
-  { to: '/attendance', label: 'Điểm danh' }, 
-  { to: '/payroll', label: 'Lương' }     ,
-  { to: '/finance', label: 'Tài chính' }
-]
-
+function SubItem({ to, label }) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `block ml-2 px-3 py-2 rounded-md text-sm transition ${
+          isActive
+            ? "bg-slate-100 text-ras-blue font-semibold"
+            : "text-slate-700 hover:bg-slate-100"
+        }`
+      }
+    >
+      {label}
+    </NavLink>
+  );
+}
 
 export default function Layout({ children }) {
-  const location = useLocation()
-  const isTeacherOrStudentTab = ['/students','/teachers'].includes(location.pathname)
+  // an toàn nếu quên bọc AppProvider
+  const app = useApp() ?? { branchId: null, setBranchId: () => {} };
+  const { branchId, setBranchId } = app;
 
+  const [openTeam, setOpenTeam] = useState(true);
+  const [openManage, setOpenManage] = useState(true);
+  const location = useLocation();
+
+  const branches = [
+    { id: 1, name: "Cơ sở Quận 1" },
+    { id: 2, name: "Cơ sở Quận 7" },
+    { id: 3, name: "Cơ sở Thủ Đức" },
+  ];
+    function logout() {
+      localStorage.removeItem("ras_auth");
+      sessionStorage.removeItem("ras_auth");
+      window.location.href = "/login";
+    }
   return (
-    <div className="min-h-screen">
-      <header className="bg-ras-blue border-b border-ras-blue">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between bg-ras-blue rounded-t-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-16 h-16 rounded-xl bg-ras-white flex items-center justify-center overflow-hidden">
-              <img src="\src\assets\ras_logo.jpg" alt="RAS Logo" className="w-14 h-14 object-contain" />
-            </div>
-            <div>
-              <h1 className="font-bold text-white leading-5 text-xl">RAS Music & Art</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-6 justify-end flex-1">
-            {/* BranchSwitcher nằm cạnh tabs */}
-            {!isTeacherOrStudentTab && <BranchSwitcher />}
-            {/* Avatar + info góc phải */}
-            <div className="flex flex-col items-center mr-2 absolute top-6 right-12">
-              <div className="text-white text-base font-semibold leading-tight">Nguyễn Văn A</div>
-              <div className="text-ras-yellow text-sm mb-2">Quản trị viên</div>
-              <button
-                className="px-4 py-1 rounded-lg bg-ras-purple text-white text-sm font-medium hover:bg-ras-blue transition"
-                onClick={() => {/* TODO: Đăng xuất */}}
-              >
-                Đăng xuất
-              </button>
+    <div className="min-h-screen bg-ras-white">
+      <div className="flex">
+        {/* ====== SIDEBAR ====== */}
+        <aside className="w-[260px] bg-white border-r min-h-screen p-4 space-y-3">
+          <div className="text-center mb-5">
+            <div className="font-extrabold text-ras-blue text-2xl leading-6">RAS</div>
+            <div className="text-slate-600">Admin Panel</div>
+            <div className="mx-auto mt-3 w-40 h-40 rounded-2xl bg-slate-100 border flex items-center justify-center overflow-hidden shadow-sm">
+              <img
+                src={LOGO_URL}
+                alt="RAS logo"
+                className="w-full h-full object-contain p-2"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                  e.currentTarget.parentElement.textContent = "LOGO";
+                }}
+              />
             </div>
           </div>
-        </div>
-        {/* Tabs */}
-        <div className="bg-ras-purple/10">
-          <div className="container mx-auto px-4">
-            <nav className="flex gap-2 overflow-x-auto py-2">
-              {tabs.map(t => (
-                <NavLink
-                  key={t.to}
-                  to={t.to}
-                  end={t.to === '/'}
-                  className={({ isActive }) =>
-                    `px-4 py-2 rounded-lg font-medium transition
-                    ${isActive
-                      ? 'bg-ras-purple text-white'
-                      : 'bg-white text-ras-blue hover:bg-ras-purple hover:text-white'}`
-                  }
-                >
-                  {t.label}
-                </NavLink>
-              ))}
-            </nav>
+
+          <Item to="/" label="Tổng quan" exact />
+          <Item to="/khoa-hoc" label="Khóa học" />
+
+          {/* ĐỘI NGŨ */}
+          <div>
+            <button
+              className="w-full text-left px-4 py-3 rounded-lg font-medium text-ras-blue hover:bg-ras-purple/10"
+              onClick={() => setOpenTeam(v => !v)}
+            >
+              Đội ngũ
+            </button>
+            {openTeam && (
+              <div className="mt-1 space-y-1">
+                <SubItem to="/doi-ngu/hoc-vien" label="Học viên" />
+                <SubItem to="/doi-ngu/nhan-vien" label="Nhân viên" />
+                <SubItem to="/doi-ngu/tai-khoan" label="Tài khoản" />
+              </div>
+            )}
           </div>
-        </div>
-      </header>
-      <main className="container mx-auto px-4 py-6">{children}</main>
+
+          {/* QUẢN LÝ */}
+          <div>
+            <button
+              className="w-full text-left px-4 py-3 rounded-lg font-medium text-ras-blue hover:bg-ras-purple/10"
+              onClick={() => setOpenManage(v => !v)}
+            >
+              Quản lý
+            </button>
+            {openManage && (
+              <div className="mt-1 space-y-1">
+                <SubItem to="/quan-ly/diem-danh" label="Điểm danh" />
+                <SubItem to="/quan-ly/xep-lop" label="Xếp lớp" />
+                <SubItem to="/quan-ly/xep-lich-truc" label="Xếp lịch trực" />
+              </div>
+            )}  
+          </div>
+
+          <Item to="/tai-chinh" label="Tài chính" />
+          <Item to="/cai-dat" label="Cài đặt" />
+
+          {/* Đăng xuất (mock) */}
+        <button onClick={logout} className="px-3 py-2 rounded border">Đăng xuất</button>
+        </aside>
+
+        <main className="flex-1 p-6">
+          {children}
+        </main>
+      </div>
     </div>
-  )
+  );
 }

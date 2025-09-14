@@ -7,15 +7,29 @@ spring:
     username: root
     password: 123
     driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jackson:
+    property-naming-strategy: SNAKE_CASE
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update   # hoặc validate / create-drop tùy nhu cầu
+    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
-    show-sql: false
-
-  sql:
-    init:
-      mode: never
+        format_sql: true
+        
+# thư mục gốc lưu file
+app:
+  upload:
+    dir: uploads
+    
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.type.descriptor.sql.BasicBinder: trace

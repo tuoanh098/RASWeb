@@ -1,10 +1,18 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useMemo, useState } from "react";
 
-const AppCtx = createContext(null)
+const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
-  const [branchId, setBranchId] = useState(null) // null = all
-  return <AppCtx.Provider value={{ branchId, setBranchId }}>{children}</AppCtx.Provider>
+  const [branchId, setBranchId] = useState(null); // cơ sở đang chọn
+
+  const value = useMemo(() => ({
+    branchId,
+    setBranchId,
+  }), [branchId]);
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
-export function useApp() { return useContext(AppCtx) }
+export function useApp() {
+  return useContext(AppContext);
+}

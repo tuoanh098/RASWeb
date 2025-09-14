@@ -1,7 +1,11 @@
 package com.ras.service.employee;
 
-import com.ras.dto.employee.EmployeeItemDto;
-import com.ras.dto.common.PageResponse; // dùng PageResponse bạn đã có
+import com.ras.web.api.common.PageResponse;
+import com.ras.service.employee.dto.EmployeeDetailDto;
+import com.ras.service.employee.dto.EmployeeListDto;
+import org.springframework.data.domain.Pageable;
+
 public interface EmployeeQueryService {
-  PageResponse<EmployeeItemDto> search(String kw, int page, int size);
+    PageResponse<EmployeeListDto> list(String q, String role, Pageable pageable);
+    EmployeeDetailDto get(Long id);
 }
