@@ -1,18 +1,23 @@
 package com.ras.domain.salary;
 
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import java.util.List;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
-
 import java.util.Optional;
+public interface NvKyLuongRepository extends CrudRepository<NvKyLuong, Long> {
+  // Projection interface khớp JSON FE cần
+  public interface PeriodView {
+    Long getId();
+    // column alias nam_thang => Jackson trả "nam_thang"
+    String getNam_thang();
+  }
 
-public interface NvKyLuongRepository extends JpaRepository<NvKyLuong, Long> {
-
-  // nv_ky_luong.nam_thang lưu dạng "YYYY-MM"
-  @Query("""
-    select k from NvKyLuong k
-    where k.namThang = :namThang
-  """)
+  @Query(
+    value = "SELECT id, nam_thang AS nam_thang FROM ky_luong ORDER BY nam_thang DESC",
+    nativeQuery = true
+  )
+  List<PeriodView> findAllPeriodsDesc();
   Optional<NvKyLuong> findByNamThang(@Param("namThang") String namThang);
 }
 

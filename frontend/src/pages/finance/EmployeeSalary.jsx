@@ -1,5 +1,5 @@
 // src/pages/finance/EmployeeSalary.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SalaryApi } from "../../lib/salaryApi.js";
 import EmployeesApi from "../../lib/employeesApi.js";
 import { req, qs } from "../../lib/http.js";
@@ -16,40 +16,123 @@ const currency = (v) =>
 
 const Section = ({ title, right, children }) => (
   <div className="rounded-2xl overflow-hidden border shadow-sm">
-    <div className="px-4 py-3 flex items-center justify-between"
-         style={{ background: RAS.softBg, borderBottom: "1px solid #ECE9FF" }}>
-      <h3 className="font-semibold" style={{ color: RAS.primary }}>{title}</h3>
+    <div
+      className="px-4 py-3 flex items-center justify-between"
+      style={{ background: RAS.softBg, borderBottom: "1px solid #ECE9FF" }}
+    >
+      <h3 className="font-semibold" style={{ color: RAS.primary }}>
+        {title}
+      </h3>
       <div className="flex items-center gap-2">{right}</div>
     </div>
     <div className="p-3 bg-white">{children}</div>
   </div>
 );
 
-/* ------- helpers ------- */
-function parsePeriodCode(code) {
-  // "92025" -> { month: 9, year: 2025 }
-  const s = String(code || "").trim();
-  if (!/^\d{4,6}$/.test(s)) return null;
-  const month = Number(s.slice(0, s.length - 4));
-  const year = Number(s.slice(-4));
-  if (month < 1 || month > 12) return null;
-  return { month, year };
-}
-const fmtPeriod = ({ month, year }) => `Tháng ${month}/${year}`;
+/* ===== helpers ===== */
+const fmtYYYYMM_toLabel = (yyyyMM) => {
+  // "2025-09" -> "09/2025"
+  if (!yyyyMM) return "";
+  const [y, m] = yyyyMM.split("-");
+  return `${m}/${y}`;
+};
 
-/* Thử resolve ky_luong_id từ backend nếu có (GET /api/payroll/resolve?month=&year=)
-   nếu không có endpoint này thì fallback: dùng thẳng code như ky_luong_id (tương thích backend hiện tại) */
-async function resolveKyLuongIdByPeriod(periodCode) {
-  const p = parsePeriodCode(periodCode);
-  if (!p) throw new Error("Mã ThángNăm không hợp lệ (vd: 92025 = tháng 9 năm 2025)");
-  try {
-    const r = await req("GET", `/api/payroll/resolve${qs({ month: p.month, year: p.year })}`);
-    if (r?.id != null) return { kyLuongId: r.id, period: p };
-  } catch (_) {
-    /* ignore: fallback */
+/* ====== Period Selector (scrollable dropdown) ====== */
+function PeriodSelect({ value, onChange }) {
+  // value: { id, nam_thang }
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState([]); // [{id, nam_thang}]
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const boxRef = useRef(null);
+
+  async function fetchPeriods() {
+    try {
+      setErr("");
+      setLoading(true);
+      // Đổi URL ở đây nếu backend khác đường dẫn
+      const list = (await req("GET", `/api/payroll/periods`)) || [];
+      // Sort giảm dần theo nam_thang
+      list.sort((a, b) => (a.nam_thang < b.nam_thang ? 1 : a.nam_thang > b.nam_thang ? -1 : 0));
+      setItems(list);
+    } catch (e) {
+      setErr(e?.message || String(e));
+    } finally {
+      setLoading(false);
+    }
   }
-  // fallback
-  return { kyLuongId: Number(periodCode), period: p };
+
+  useEffect(() => {
+    function onDocClick(e) {
+      if (!boxRef.current) return;
+      if (!boxRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && !items.length) fetchPeriods();
+  }
+
+  const label = value ? fmtYYYYMM_toLabel(value.nam_thang) : "Chọn kỳ lương";
+
+  return (
+    <div className="relative" ref={boxRef}>
+      <button
+        type="button"
+        onClick={toggle}
+        className="px-3 py-2 rounded border min-w-[160px] flex items-center justify-between gap-2"
+        style={{ borderColor: "#ECE9FF", color: "#111" }}
+        title="Chọn kỳ lương (tháng/năm)"
+      >
+        <span>
+          {value ? `Tháng ${label}` : "Chọn kỳ lương"}
+        </span>
+        <svg width="16" height="16" viewBox="0 0 24 24" className={open ? "rotate-180" : ""}>
+          <path d="M7 10l5 5 5-5z" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          className="absolute z-20 mt-2 w-64 rounded-xl border bg-white shadow-lg overflow-hidden"
+          style={{ borderColor: "#ECE9FF" }}
+        >
+          <div className="px-3 py-2 text-sm font-medium" style={{ color: RAS.primary, background: RAS.softBg }}>
+            Kỳ lương (mới → cũ)
+          </div>
+          {err && <div className="px-3 py-2 text-sm text-red-600">Lỗi: {err}</div>}
+          <div className="max-h-72 overflow-auto">
+            {loading ? (
+              <div className="px-3 py-3 text-sm">Đang tải…</div>
+            ) : items.length ? (
+              items.map((it) => (
+                <button
+                  key={it.id}
+                  onClick={() => {
+                    onChange(it);
+                    setOpen(false);
+                  }}
+                  className={
+                    "w-full text-left px-3 py-2 text-sm hover:bg-gray-50 " +
+                    (value?.id === it.id ? "bg-gray-50" : "")
+                  }
+                >
+                  <div className="font-medium">Tháng {fmtYYYYMM_toLabel(it.nam_thang)}</div>
+                  <div className="text-xs opacity-60">ID: {it.id}</div>
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-3 text-sm text-gray-500">Chưa có kỳ lương.</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ------- list editor tái sử dụng (hoa hồng/thưởng/...) ------- */
@@ -98,17 +181,27 @@ function ListEditor({ title, type, kyLuongId, nhanVienId, columns, buildCreatePa
           upsert: (body) => SalaryApi.deductions.upsert(body),
           remove: (id) => SalaryApi.deductions.remove(id, kyLuongId, nhanVienId),
         };
-      default: return null;
+      default:
+        return null;
     }
   }, [type, kyLuongId, nhanVienId]);
 
   async function load() {
     if (!api) return;
-    try { setErr(""); setLoading(true); setItems(await api.list() || []); }
-    catch (e) { setErr(e?.message || String(e)); }
-    finally { setLoading(false); }
+    try {
+      setErr("");
+      setLoading(true);
+      setItems((await api.list()) || []);
+    } catch (e) {
+      setErr(e?.message || String(e));
+    } finally {
+      setLoading(false);
+    }
   }
-  useEffect(() => { if (kyLuongId && nhanVienId) load(); /* eslint-disable-next-line */ }, [kyLuongId, nhanVienId, type]);
+  useEffect(() => {
+    if (kyLuongId && nhanVienId) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kyLuongId, nhanVienId, type]);
 
   async function onAdd() {
     try {
@@ -122,9 +215,16 @@ function ListEditor({ title, type, kyLuongId, nhanVienId, columns, buildCreatePa
       await api.upsert(buildCreatePayload ? buildCreatePayload(base) : base);
       setDraft({ so_tien: "", ghi_chu: "" });
       await load();
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }
-  async function onDelete(id) { if (confirm("Xoá mục này?")) { await api.remove(id); await load(); } }
+  async function onDelete(id) {
+    if (confirm("Xoá mục này?")) {
+      await api.remove(id);
+      await load();
+    }
+  }
 
   return (
     <Section
@@ -133,50 +233,72 @@ function ListEditor({ title, type, kyLuongId, nhanVienId, columns, buildCreatePa
         <div className="flex items-end gap-2">
           <label className="text-xs">
             <div>Số tiền</div>
-            <input className="border rounded px-2 py-1 w-40" inputMode="numeric"
-                   value={draft.so_tien} onChange={e=>setDraft(d=>({...d,so_tien:e.target.value}))}
-                   placeholder="vd 300000" />
+            <input
+              className="border rounded px-2 py-1 w-40"
+              inputMode="numeric"
+              value={draft.so_tien}
+              onChange={(e) => setDraft((d) => ({ ...d, so_tien: e.target.value }))}
+              placeholder="vd 300000"
+            />
           </label>
           <label className="text-xs">
             <div>Ghi chú</div>
-            <input className="border rounded px-2 py-1 w-60"
-                   value={draft.ghi_chu} onChange={e=>setDraft(d=>({...d,ghi_chu:e.target.value}))}
-                   placeholder="tuỳ chọn" />
+            <input
+              className="border rounded px-2 py-1 w-60"
+              value={draft.ghi_chu}
+              onChange={(e) => setDraft((d) => ({ ...d, ghi_chu: e.target.value }))}
+              placeholder="tuỳ chọn"
+            />
           </label>
-          <button className="px-3 py-2 rounded text-white disabled:opacity-50"
-                  style={{ background: `linear-gradient(90deg, ${RAS.primary}, ${RAS.accent2})` }}
-                  onClick={onAdd} disabled={saving}>
+          <button
+            className="px-3 py-2 rounded text-white disabled:opacity-50"
+            style={{ background: `linear-gradient(90deg, ${RAS.primary}, ${RAS.accent2})` }}
+            onClick={onAdd}
+            disabled={saving}
+          >
             {saving ? "Đang lưu…" : "Thêm"}
           </button>
         </div>
       }
     >
       {err && <div className="rounded border border-red-200 bg-red-50 text-red-700 px-3 py-2 mb-2">Lỗi: {err}</div>}
-      {loading ? "Đang tải…" : (
+      {loading ? (
+        "Đang tải…"
+      ) : (
         <div className="overflow-auto">
           <table className="min-w-[680px] w-full">
             <thead className="bg-gray-50">
               <tr className="[&>th]:px-3 [&>th]:py-2 text-left text-sm">
                 <th>ID</th>
-                {columns.map(c => <th key={c.key}>{c.label}</th>)}
+                {columns.map((c) => (
+                  <th key={c.key}>{c.label}</th>
+                ))}
                 <th></th>
               </tr>
             </thead>
             <tbody className="text-sm">
-              {items.map(it => (
+              {items.map((it) => (
                 <tr key={it.id} className="border-t">
                   <td className="px-3 py-2">{it.id}</td>
-                  {columns.map(c => (
+                  {columns.map((c) => (
                     <td key={c.key} className="px-3 py-2">
                       {c.render ? c.render(it) : String(it[c.key] ?? "")}
                     </td>
                   ))}
                   <td className="px-3 py-2 text-right">
-                    <button className="px-2 py-1 text-red-600 hover:bg-red-50 rounded" onClick={()=>onDelete(it.id)}>Xoá</button>
+                    <button className="px-2 py-1 text-red-600 hover:bg-red-50 rounded" onClick={() => onDelete(it.id)}>
+                      Xoá
+                    </button>
                   </td>
                 </tr>
               ))}
-              {!items.length && <tr><td className="px-3 py-6 text-center text-gray-500" colSpan={columns.length+2}>Chưa có dữ liệu.</td></tr>}
+              {!items.length && (
+                <tr>
+                  <td className="px-3 py-6 text-center text-gray-500" colSpan={columns.length + 2}>
+                    Chưa có dữ liệu.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -187,39 +309,42 @@ function ListEditor({ title, type, kyLuongId, nhanVienId, columns, buildCreatePa
 
 /* ===================== PAGE ===================== */
 export default function EmployeeSalary() {
-  const [periodCode, setPeriodCode] = useState("");       // MYYYY (vd 92025)
+  const [selectedPeriod, setSelectedPeriod] = useState(null); // {id, nam_thang}
   const [nhanVienId, setNhanVienId] = useState("");
-  const [kyLuongId, setKyLuongId] = useState(null);
-  const [period, setPeriod] = useState(null);             // {month, year}
+  const kyLuongId = selectedPeriod?.id ?? null;
+
   const [row, setRow] = useState(null);
   const [teacherName, setTeacherName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const canQuery = useMemo(() => periodCode && nhanVienId, [periodCode, nhanVienId]);
+  const canQuery = useMemo(() => !!kyLuongId && !!nhanVienId, [kyLuongId, nhanVienId]);
+
   async function loadHeader() {
     if (!canQuery) return;
     setLoading(true);
     try {
-      const { kyLuongId, period } = await resolveKyLuongIdByPeriod(periodCode);
-      setKyLuongId(kyLuongId);
-      setPeriod(period);
-
-      // lấy tên nhân viên
+      // Tên nhân viên
       try {
         const emp = await EmployeesApi.get(Number(nhanVienId));
         setTeacherName(emp?.ho_ten || emp?.hoTen || `#${nhanVienId}`);
-      } catch { setTeacherName(`#${nhanVienId}`); }
+      } catch {
+        setTeacherName(`#${nhanVienId}`);
+      }
 
-      // lấy 1 dòng tổng lương của NV
+      // Dòng tổng cho NV
       const rows = (await SalaryApi.list(Number(kyLuongId))) || [];
       const found = rows.find((r) => String(r.nhan_vien_id) === String(nhanVienId));
       setRow(found || null);
     } catch (e) {
-      alert(e.message || String(e));
-    } finally { setLoading(false); }
+      alert(e?.message || String(e));
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { setRow(null); }, [periodCode, nhanVienId]);
+  useEffect(() => {
+    setRow(null);
+  }, [selectedPeriod, nhanVienId]);
 
   const totals = useMemo(() => {
     const r = row || {};
@@ -234,53 +359,228 @@ export default function EmployeeSalary() {
     };
   }, [row]);
 
-  function exportExcel() {
-    // Xuất CSV (Excel mở được) cho nhanh gọn – không dùng lib ngoài
-    const p = period || parsePeriodCode(periodCode);
-    const header = ["Nhân viên","Tháng/Năm","Lương cứng","Hoa hồng","Thưởng","Trực","Phụ cấp khác","Phạt/KL","Tổng lương"];
-    const data = [[
-      teacherName || `#${nhanVienId}`,
-      p ? `${p.month}/${p.year}` : periodCode,
-      totals.luong_cung, totals.tong_hoa_hong, totals.tong_thuong,
-      totals.tong_truc, totals.tong_phu_cap_khac, totals.tong_phat,
-      totals.tong_luong,
-    ]];
-    const rows = [header, ...data]
-      .map(cols => cols.map(v => `"${String(v).replace(/"/g,'""')}"`).join(","))
-      .join("\r\n");
-    const blob = new Blob(["\uFEFF" + rows], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    const fileName = `salary_${(teacherName||nhanVienId).toString().replace(/\s+/g,'_')}_${p?.year||''}_${p?.month||''}.csv`;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(a.href);
+// ------------- THAY EXPORT CSV BẰNG EXCEL CÓ STYLE -------------
+async function exportExcel() {
+  if (!selectedPeriod || !row) return;
+
+  // nạp thư viện khi cần để nhẹ bundle
+  const [{ Workbook }, { saveAs }] = await Promise.all([
+    import("exceljs"),
+    import("file-saver"),
+  ]);
+
+  const wb = new Workbook();
+  const ws = wb.addWorksheet("Bang luong");
+
+  // ===== MÀU CHỦ ĐẠO & STYLE =====
+  const COLORS = {
+    title: "F5CBA7",      // cam nhạt (header lớn)
+    header: "FFEB3B",     // vàng (hàng tên cột)
+    name: "90CAF9",       // ô tên nhân viên
+    month: "BBDEFB",
+    luongCung: "A5D6A7",  // xanh lá nhạt
+    hoaHong: "E91E63",    // hồng đậm
+    thuong: "BA68C8",     // tím
+    truc: "E0E0E0",
+    phuCap: "FFF9C4",
+    phat: "FFE0B2",
+    tong: "B3E5FC",       // xanh dương nhạt
+    section: "CFE1F8"     // tiêu đề từng bảng chi tiết
+  };
+
+  const currencyFmt = '#,##0" đ"';
+
+  function setBorder(r) {
+    r.eachCell((c) => {
+      c.border = {
+        top: { style: "thin", color: { argb: "000000" } },
+        left: { style: "thin", color: { argb: "000000" } },
+        bottom: { style: "thin", color: { argb: "000000" } },
+        right: { style: "thin", color: { argb: "000000" } },
+      };
+    });
   }
 
-  const periodOk = parsePeriodCode(periodCode);
+  const periodLabel = (() => {
+    const [y, m] = selectedPeriod.nam_thang.split("-");
+    const short = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m-1];
+    return `${short}-${String(y).slice(-2)}`;
+  })();
+
+  // ====== HÀNG TIÊU ĐỀ LỚN ======
+  ws.mergeCells("A1:I1");
+  const title = ws.getCell("A1");
+  title.value = `BẢNG LƯƠNG THÁNG ${parseInt(selectedPeriod.nam_thang.split("-")[1], 10)}`;
+  title.alignment = { vertical: "middle", horizontal: "center" };
+  title.font = { bold: true, size: 16 };
+  title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.title } };
+  ws.getRow(1).height = 24;
+
+  // ====== HÀNG HEADER ======
+  const headerRow = ws.addRow([
+    "Nhân viên","Tháng/Năm","Lương cứng","Hoa hồng","Thưởng","Trực","Phụ cấp khác","Phạt/KL","Tổng lương"
+  ]);
+  headerRow.eachCell((c) => {
+    c.font = { bold: true };
+    c.alignment = { vertical:"middle", horizontal:"center" };
+    c.fill = { type:"pattern", pattern:"solid", fgColor:{ argb: COLORS.header } };
+  });
+  setBorder(headerRow);
+
+  // ====== HÀNG TỔNG ======
+  const totalsRow = ws.addRow([
+    (teacherName || `#${nhanVienId}`),
+    periodLabel,
+    totals.luong_cung,
+    totals.tong_hoa_hong,
+    totals.tong_thuong,
+    totals.tong_truc,
+    totals.tong_phu_cap_khac,
+    totals.tong_phat,
+    totals.tong_luong,
+  ]);
+
+  // định dạng & màu từng cột
+  ws.getColumn(1).width = 24;
+  ws.getColumn(2).width = 12;
+  for (let i = 3; i <= 9; i++) { ws.getColumn(i).numFmt = currencyFmt; ws.getColumn(i).width = 14; }
+
+  // màu theo cột
+  const fills = [null,null,COLORS.luongCung,COLORS.hoaHong,COLORS.thuong,COLORS.truc,COLORS.phuCap,COLORS.phat,COLORS.tong];
+  totalsRow.eachCell((c, i) => {
+    c.fill = { type:"pattern", pattern:"solid", fgColor:{ argb: fills[i] || "FFFFFF" } };
+    c.font = { bold: i === 9 }; // tổng lương bôi đậm
+  });
+  // ô tên & tháng nền nhẹ
+  totalsRow.getCell(1).fill = { type:"pattern", pattern:"solid", fgColor:{ argb: COLORS.name } };
+  totalsRow.getCell(2).fill = { type:"pattern", pattern:"solid", fgColor:{ argb: COLORS.month } };
+  setBorder(totalsRow);
+
+  ws.addRow([]); // dòng trống
+
+  // ====== TẢI DỮ LIỆU CHI TIẾT ======
+  const kyLuongIdNum = Number(kyLuongId);
+  const nhanVienIdNum = Number(nhanVienId);
+
+  const [
+    commissions,      // {id, so_tien, ghi_chu}
+    bonusTiers,       // {id, muc_thuong, so_hv_moi, ghi_chu}
+    bonusOthers,      // {id, so_tien, noi_dung}
+    shifts,           // {id, ngay, ca, so_tien, ghi_chu}
+    allowances,       // {id, noi_dung, so_tien}
+    deductions        // {id, noi_dung, so_tien_phat, ngay_thang}
+  ] = await Promise.all([
+    SalaryApi.commissions.list(kyLuongIdNum, nhanVienIdNum),
+    SalaryApi.bonuses.tiers.list(kyLuongIdNum, nhanVienIdNum),
+    SalaryApi.bonuses.others.list(kyLuongIdNum, nhanVienIdNum),
+    SalaryApi.shifts.list(kyLuongIdNum, nhanVienIdNum),
+    SalaryApi.allowances.list(kyLuongIdNum, nhanVienIdNum),
+    SalaryApi.deductions.list(kyLuongIdNum, nhanVienIdNum),
+  ].map(p => p.catch(()=>[])));
+
+  // helper: in 1 SECTION chi tiết
+  function printSection(title, color, columns, rows, mapRow) {
+    // tiêu đề section (merge A..I)
+    const startRowIdx = ws.lastRow.number + 1;
+    ws.mergeCells(`A${startRowIdx}:I${startRowIdx}`);
+    const t = ws.getCell(`A${startRowIdx}`);
+    t.value = title;
+    t.font = { bold: true };
+    t.alignment = { vertical:"middle" };
+    t.fill = { type:"pattern", pattern:"solid", fgColor:{ argb: color } };
+    ws.getRow(startRowIdx).height = 18;
+
+    // header bảng
+    const head = ws.addRow(columns.map(c => c.header));
+    head.eachCell((c)=>{ c.font = { bold:true }; c.alignment = { vertical:"middle", horizontal:"center" }; c.fill = { type:"pattern", pattern:"solid", fgColor:{ argb:"FFFDE7" } };});
+    setBorder(head);
+
+    // data
+    rows.forEach((r, idx) => {
+      const arr = mapRow(r, idx);
+      const row = ws.addRow(arr);
+      // số tiền -> định dạng
+      columns.forEach((c, i) => {
+        if (c.money) row.getCell(i+1).numFmt = currencyFmt;
+        if (c.width) ws.getColumn(i+1).width = Math.max(ws.getColumn(i+1).width ?? 10, c.width);
+      });
+      setBorder(row);
+    });
+
+    ws.addRow([]);
+  }
+
+  // ===== In từng bảng chi tiết =====
+  printSection(
+    "Hoa hồng chốt lớp",
+    COLORS.section,
+    [{header:"ID", width:8},{header:"Số tiền", money:true, width:14},{header:"Ghi chú", width:60}],
+    commissions || [],
+    (it, _i) => [it.id, it.so_tien || 0, it.ghi_chu || ""]
+  );
+
+  printSection(
+    "Thưởng bậc",
+    COLORS.section,
+    [{header:"ID", width:8},{header:"Mức thưởng", money:true, width:14},{header:"Số HV mới", width:12},{header:"Ghi chú", width:60}],
+    bonusTiers || [],
+    (it) => [it.id, it.muc_thuong || 0, it.so_hv_moi ?? "", it.ghi_chu || ""]
+  );
+
+  printSection(
+    "Thưởng khác",
+    COLORS.section,
+    [{header:"ID", width:8},{header:"Số tiền", money:true, width:14},{header:"Nội dung", width:60}],
+    bonusOthers || [],
+    (it) => [it.id, it.so_tien || 0, it.noi_dung || it.ghi_chu || ""]
+  );
+
+  printSection(
+    "Trực",
+    COLORS.section,
+    [{header:"ID", width:8},{header:"Ngày", width:14},{header:"Ca", width:12},{header:"Số tiền", money:true, width:14},{header:"Ghi chú", width:60}],
+    shifts || [],
+    (it) => [it.id, it.ngay || "", it.ca || "", it.so_tien || 0, it.ghi_chu || ""]
+  );
+
+  printSection(
+    "Phụ cấp khác",
+    COLORS.section,
+    [{header:"ID", width:8},{header:"Nội dung", width:50},{header:"Số tiền", money:true, width:14}],
+    allowances || [],
+    (it) => [it.id, it.noi_dung || it.ghi_chu || "", it.so_tien || 0]
+  );
+
+  printSection(
+    "Phạt / Kỷ luật",
+    COLORS.section,
+    [{header:"ID", width:8},{header:"Nội dung", width:50},{header:"Số tiền phạt", money:true, width:16},{header:"Ngày", width:14}],
+    deductions || [],
+    (it) => [it.id, it.noi_dung || it.ghi_chu || "", it.so_tien_phat || 0, it.ngay_thang || ""]
+  );
+
+  // ===== Ghi file =====
+  const buf = await wb.xlsx.writeBuffer();
+  const fileName = `BangLuong_${(teacherName||nhanVienId).toString().replace(/\s+/g,'_')}_${selectedPeriod.nam_thang}.xlsx`;
+  saveAs(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), fileName);
+}
+
 
   return (
     <div className="p-6 space-y-5">
       {/* Header brand */}
-      <div className="rounded-2xl px-4 py-3 flex items-center justify-between shadow-sm"
-           style={{ background: RAS.softBg }}>
-        <h2 className="font-semibold" style={{ color: RAS.primary }}>Bảng lương giáo viên</h2>
+      <div className="rounded-2xl px-4 py-3 flex items-center justify-between shadow-sm" style={{ background: RAS.softBg }}>
+        <h2 className="font-semibold" style={{ color: RAS.primary }}>
+          Bảng lương giáo viên
+        </h2>
         <div className="text-sm opacity-80">RAS Finance · tra cứu & chỉnh sửa</div>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <label className="text-sm block">ThángNăm (MYYYY)</label>
-          <input
-            value={periodCode}
-            onChange={(e) => setPeriodCode(e.target.value)}
-            placeholder="vd: 92025 = 9/2025"
-            className="border rounded px-3 py-2 w-48"
-          />
-          {!periodOk && periodCode && (
-            <div className="text-xs text-red-600 mt-1">Định dạng không hợp lệ (MYYYY, ví dụ 92025)</div>
-          )}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm block">Kỳ lương (scroll để chọn)</label>
+          <PeriodSelect value={selectedPeriod} onChange={setSelectedPeriod} />
         </div>
         <div>
           <label className="text-sm block">Nhân viên ID</label>
@@ -295,7 +595,7 @@ export default function EmployeeSalary() {
           onClick={loadHeader}
           className="px-4 py-2 rounded text-white disabled:opacity-50"
           style={{ background: `linear-gradient(90deg, ${RAS.primary}, ${RAS.accent2})` }}
-          disabled={!canQuery || !periodOk || loading}
+          disabled={!canQuery || loading}
         >
           Tải dữ liệu
         </button>
@@ -316,29 +616,49 @@ export default function EmployeeSalary() {
           <div>
             <div className="text-xs uppercase text-slate-500">Nhân viên</div>
             <div className="text-lg font-semibold" style={{ color: RAS.primary }}>
-              {teacherName ? teacherName : (nhanVienId ? `#${nhanVienId}` : "—")}
+              {teacherName ? teacherName : nhanVienId ? `#${nhanVienId}` : "—"}
             </div>
           </div>
           <div className="h-10 w-px bg-gray-300" />
           <div>
             <div className="text-xs uppercase text-slate-500">Kỳ lương</div>
             <div className="text-lg font-semibold" style={{ color: RAS.primary }}>
-              {period ? fmtPeriod(period) : (periodCode ? `#${periodCode}` : "—")}
+              {selectedPeriod ? `Tháng ${fmtYYYYMM_toLabel(selectedPeriod.nam_thang)}` : "—"}
             </div>
           </div>
           <div className="ml-auto text-right">
             <div className="text-xs uppercase text-slate-500">Tổng lương</div>
-            <div className="text-2xl font-bold" style={{ color: RAS.accent1 }}>{currency(totals.tong_luong)}</div>
+            <div className="text-2xl font-bold" style={{ color: RAS.accent1 }}>
+              {currency(totals.tong_luong)}
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-4">
-          <div className="rounded-lg bg-white border p-3"><div className="text-xs text-gray-500">Lương cứng</div><div className="font-semibold">{currency(totals.luong_cung)}</div></div>
-          <div className="rounded-lg bg-white border p-3"><div className="text-xs text-gray-500">Hoa hồng</div><div className="font-semibold">{currency(totals.tong_hoa_hong)}</div></div>
-          <div className="rounded-lg bg-white border p-3"><div className="text-xs text-gray-500">Thưởng</div><div className="font-semibold">{currency(totals.tong_thuong)}</div></div>
-          <div className="rounded-lg bg-white border p-3"><div className="text-xs text-gray-500">Trực</div><div className="font-semibold">{currency(totals.tong_truc)}</div></div>
-          <div className="rounded-lg bg-white border p-3"><div className="text-xs text-gray-500">Phụ cấp</div><div className="font-semibold">{currency(totals.tong_phu_cap_khac)}</div></div>
-          <div className="rounded-lg bg-white border p-3"><div className="text-xs text-gray-500">Phạt/KL</div><div className="font-semibold">{currency(totals.tong_phat)}</div></div>
+          <div className="rounded-lg bg-white border p-3">
+            <div className="text-xs text-gray-500">Lương cứng</div>
+            <div className="font-semibold">{currency(totals.luong_cung)}</div>
+          </div>
+          <div className="rounded-lg bg-white border p-3">
+            <div className="text-xs text-gray-500">Hoa hồng</div>
+            <div className="font-semibold">{currency(totals.tong_hoa_hong)}</div>
+          </div>
+          <div className="rounded-lg bg-white border p-3">
+            <div className="text-xs text-gray-500">Thưởng</div>
+            <div className="font-semibold">{currency(totals.tong_thuong)}</div>
+          </div>
+          <div className="rounded-lg bg-white border p-3">
+            <div className="text-xs text-gray-500">Trực</div>
+            <div className="font-semibold">{currency(totals.tong_truc)}</div>
+          </div>
+          <div className="rounded-lg bg-white border p-3">
+            <div className="text-xs text-gray-500">Phụ cấp</div>
+            <div className="font-semibold">{currency(totals.tong_phu_cap_khac)}</div>
+          </div>
+          <div className="rounded-lg bg-white border p-3">
+            <div className="text-xs text-gray-500">Phạt/KL</div>
+            <div className="font-semibold">{currency(totals.tong_phat)}</div>
+          </div>
         </div>
       </div>
 

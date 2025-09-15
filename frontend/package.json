@@ -16,6 +16,8 @@
     "@mui/x-data-grid": "^6.20.4",
     "axios": "^1.7.2",
     "dayjs": "^1.11.18",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
     "lucide-react": "^0.544.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
