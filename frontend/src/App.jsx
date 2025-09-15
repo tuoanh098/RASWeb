@@ -46,7 +46,7 @@ export default function App() {
           <Route path="xep-lop" element={<Schedule/>} />
           <Route path="xep-lich-truc" element={<DutyRoster/>} />
         </Route>
-        <Route path="/luong" element={<ESalary/>} />
+        <Route path="/luong-nhan-vien" element={<ESalary/>} />
         <Route path="/cai-dat" element={<Settings/>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

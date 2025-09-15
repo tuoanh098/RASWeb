@@ -1,7 +1,8 @@
 package com.ras.domain.salary;
 
-import lombok.*;
 import jakarta.persistence.*;
+import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -25,25 +26,26 @@ public class NvBangLuongThang {
     @Column(name = "nhan_vien_id", nullable = false)
     private Long nhanVienId;
 
-    @Column(name = "luong_cung", precision = 38, scale = 2)
+    // Đồng bộ VND nguyên: DECIMAL(12,0)
+    @Column(name = "luong_cung", precision = 12, scale = 0)
     private BigDecimal luongCung;
 
-    @Column(name = "tong_hoa_hong", precision = 38, scale = 2)
+    @Column(name = "tong_hoa_hong", precision = 12, scale = 0)
     private BigDecimal tongHoaHong;
 
-    @Column(name = "tong_thuong", precision = 38, scale = 2)
+    @Column(name = "tong_thuong", precision = 12, scale = 0)
     private BigDecimal tongThuong;
 
-    @Column(name = "tong_truc", precision = 38, scale = 2)
+    @Column(name = "tong_truc", precision = 12, scale = 0)
     private BigDecimal tongTruc;
 
-    @Column(name = "tong_phu_cap_khac", precision = 38, scale = 2)
+    @Column(name = "tong_phu_cap_khac", precision = 12, scale = 0)
     private BigDecimal tongPhuCapKhac;
 
-    @Column(name = "tong_phat", precision = 38, scale = 2)
+    @Column(name = "tong_phat", precision = 12, scale = 0)
     private BigDecimal tongPhat;
 
-    @Column(name = "tong_luong", precision = 38, scale = 2)
+    @Column(name = "tong_luong", precision = 12, scale = 0)
     private BigDecimal tongLuong;
 
     @Column(name = "ghi_chu", length = 255)

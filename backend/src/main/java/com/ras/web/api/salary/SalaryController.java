@@ -1,12 +1,10 @@
 package com.ras.web.api.salary;
 
-import com.ras.domain.salary.NvBangLuongThang;
 import com.ras.domain.salary.NvHoaHongChotLop;
 import lombok.RequiredArgsConstructor;
 import com.ras.service.salary.SalaryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import com.ras.service.salary.dto.HoaHongDTO;
 import com.ras.service.salary.dto.SalaryRowDTO;
 import com.ras.service.salary.SalaryMappers;
@@ -20,19 +18,15 @@ public class SalaryController {
 
     private final SalaryService salaryService;
 
-    // GET /api/salary?ky_luong_id=123  → danh sách bảng lương tháng
     @GetMapping
-    public ResponseEntity<List<SalaryRowDTO>> getBangLuong(@RequestParam(name = "ky_luong_id") Long kyLuongId) {
-        List<NvBangLuongThang> rows = salaryService.getBangLuongThang(kyLuongId);
+    public ResponseEntity<List<SalaryRowDTO>> getBangLuong(@RequestParam(name="ky_luong_id") Long kyLuongId) {
+        var rows = salaryService.getBangLuongThang(kyLuongId);
         return ResponseEntity.ok(rows.stream().map(SalaryMappers::toSalaryRowDTO).toList());
     }
 
-    // GET /api/salary/total?ky_luong_id=123  → tổng lương toàn bộ nhân viên trong tháng
     @GetMapping("/total")
-    public ResponseEntity<BigDecimal> getTongLuong(@RequestParam(name = "ky_luong_id") Long kyLuongId) {
-        Double sum = salaryService.getTongLuongThang(kyLuongId);
-        BigDecimal v = sum == null ? BigDecimal.ZERO : BigDecimal.valueOf(sum);
-        return ResponseEntity.ok(v);
+    public ResponseEntity<BigDecimal> getTongLuong(@RequestParam(name="ky_luong_id") Long kyLuongId) {
+        return ResponseEntity.ok(salaryService.getTongLuongThang(kyLuongId));
     }
 
     // GET /api/salary/{nhan_vien_id}/hoa-hong?ky_luong_id=123 → list chi tiết hoa hồng

@@ -1,8 +1,9 @@
+// src/lib/accountsApi.js
 import { req, qs } from "./http.js";
 
 const AccountsApi = {
-  list({ page = 0, size = 10, q } = {}) {
-    return req("GET", `/api/accounts${qs({ page, size, q })}`);
+  list({ page = 0, size = 10, q, role, active } = {}) {
+    return req("GET", `/api/accounts${qs({ page, size, q, role, active })}`);
   },
   get(id) {
     if (id == null) throw new Error("Thiếu ID tài khoản");
@@ -20,5 +21,4 @@ const AccountsApi = {
     return req("DELETE", `/api/accounts/${id}`);
   },
 };
-
 export default AccountsApi;

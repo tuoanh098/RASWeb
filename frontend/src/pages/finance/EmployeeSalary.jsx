@@ -1,442 +1,417 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Box, Button, Card, CardContent, Chip, Dialog, DialogActions, DialogContent, DialogTitle,
-  Grid, IconButton, MenuItem, Select, Stack, TextField, Typography, Tooltip, Divider
-} from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import HistoryIcon from '@mui/icons-material/History';
-import dayjs from 'dayjs';
-import { RAS } from '../../lib/rasPalette';
-import {
-  listStaffSalary, fetchAllStaffSalary, recalcStaffSalary,
-  updateBaseSalary, addPenalty, listPenalties
-} from '../../lib/staffSalaryApi';
-import { toCurrency, toDateStr } from '../../lib/format';
+// src/pages/finance/EmployeeSalary.jsx
+import { useEffect, useMemo, useState } from "react";
+import { SalaryApi } from "../../lib/salaryApi.js";
+import EmployeesApi from "../../lib/employeesApi.js";
+import { req, qs } from "../../lib/http.js";
 
-export default function EmployeeSalary() {
-  // kỳ mặc định: tháng hiện tại
-  const [ky, setKy] = useState(dayjs().format('YYYY-MM'));
-  const [rows, setRows] = useState([]);
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
-  const [rowCount, setRowCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+/* ===== RAS brand ===== */
+const RAS = {
+  primary: "#4434C2",
+  accent1: "#FF6F61",
+  accent2: "#22B8B5",
+  softBg: "linear-gradient(135deg,#f6f5ff 0%, #fffdf7 100%)",
+};
+const currency = (v) =>
+  (Number(v ?? 0)).toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 
-  // KPI tổng (all rows)
-  const [kpi, setKpi] = useState({
-    count: 0, luongCung: 0, hoaHong: 0, thuong: 0, truc: 0, phuCap: 0, phat: 0, tong: 0
-  });
+const Section = ({ title, right, children }) => (
+  <div className="rounded-2xl overflow-hidden border shadow-sm">
+    <div className="px-4 py-3 flex items-center justify-between"
+         style={{ background: RAS.softBg, borderBottom: "1px solid #ECE9FF" }}>
+      <h3 className="font-semibold" style={{ color: RAS.primary }}>{title}</h3>
+      <div className="flex items-center gap-2">{right}</div>
+    </div>
+    <div className="p-3 bg-white">{children}</div>
+  </div>
+);
 
-  // penalty dialog
-  const [penOpen, setPenOpen] = useState(false);
-  const [penForm, setPenForm] = useState({
-    nhanVienId: '',
-    ngayThang: dayjs().format('YYYY-MM-DD'),
-    soTienPhat: -100000,
-    noiDungLoi: 'Vi phạm',
-    chiNhanhId: '',
-  });
+/* ------- helpers ------- */
+function parsePeriodCode(code) {
+  // "92025" -> { month: 9, year: 2025 }
+  const s = String(code || "").trim();
+  if (!/^\d{4,6}$/.test(s)) return null;
+  const month = Number(s.slice(0, s.length - 4));
+  const year = Number(s.slice(-4));
+  if (month < 1 || month > 12) return null;
+  return { month, year };
+}
+const fmtPeriod = ({ month, year }) => `Tháng ${month}/${year}`;
 
-  // penalty history dialog
-  const [hisOpen, setHisOpen] = useState(false);
-  const [hisNV, setHisNV] = useState(null);
-  const [hisRows, setHisRows] = useState([]);
-  const [hisPage, setHisPage] = useState(0);
-  const [hisSize, setHisSize] = useState(10);
-  const [hisTotal, setHisTotal] = useState(0);
-  const [hisLoading, setHisLoading] = useState(false);
+/* Thử resolve ky_luong_id từ backend nếu có (GET /api/payroll/resolve?month=&year=)
+   nếu không có endpoint này thì fallback: dùng thẳng code như ky_luong_id (tương thích backend hiện tại) */
+async function resolveKyLuongIdByPeriod(periodCode) {
+  const p = parsePeriodCode(periodCode);
+  if (!p) throw new Error("Mã ThángNăm không hợp lệ (vd: 92025 = tháng 9 năm 2025)");
+  try {
+    const r = await req("GET", `/api/payroll/resolve${qs({ month: p.month, year: p.year })}`);
+    if (r?.id != null) return { kyLuongId: r.id, period: p };
+  } catch (_) {
+    /* ignore: fallback */
+  }
+  // fallback
+  return { kyLuongId: Number(periodCode), period: p };
+}
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const { items, page: pg, size, total } = await listStaffSalary({ ky, page, size: pageSize });
-      setRows(items);
-      setPage(pg);
-      setPageSize(size);
-      setRowCount(total);
-    } catch (e) {
-      console.error(e);
-      alert('Lỗi tải bảng lương nhân viên');
-    } finally {
-      setLoading(false);
+/* ------- list editor tái sử dụng (hoa hồng/thưởng/...) ------- */
+function ListEditor({ title, type, kyLuongId, nhanVienId, columns, buildCreatePayload }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [draft, setDraft] = useState({ so_tien: "", ghi_chu: "" });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const api = useMemo(() => {
+    switch (type) {
+      case "commissions":
+        return {
+          list: () => SalaryApi.commissions.list(kyLuongId, nhanVienId),
+          upsert: (body) => SalaryApi.commissions.upsert(body),
+          remove: (id) => SalaryApi.commissions.remove(id, kyLuongId, nhanVienId),
+        };
+      case "bonus_tiers":
+        return {
+          list: () => SalaryApi.bonuses.tiers.list(kyLuongId, nhanVienId),
+          upsert: (body) => SalaryApi.bonuses.tiers.upsert(body),
+          remove: (id) => SalaryApi.bonuses.tiers.remove(id, kyLuongId, nhanVienId),
+        };
+      case "bonus_others":
+        return {
+          list: () => SalaryApi.bonuses.others.list(kyLuongId, nhanVienId),
+          upsert: (body) => SalaryApi.bonuses.others.upsert(body),
+          remove: (id) => SalaryApi.bonuses.others.remove(id, kyLuongId, nhanVienId),
+        };
+      case "shifts":
+        return {
+          list: () => SalaryApi.shifts.list(kyLuongId, nhanVienId),
+          upsert: (body) => SalaryApi.shifts.upsert(body),
+          remove: (id) => SalaryApi.shifts.remove(id, kyLuongId, nhanVienId),
+        };
+      case "allowances":
+        return {
+          list: () => SalaryApi.allowances.list(kyLuongId, nhanVienId),
+          upsert: (body) => SalaryApi.allowances.upsert(body),
+          remove: (id) => SalaryApi.allowances.remove(id, kyLuongId, nhanVienId),
+        };
+      case "deductions":
+        return {
+          list: () => SalaryApi.deductions.list(kyLuongId, nhanVienId),
+          upsert: (body) => SalaryApi.deductions.upsert(body),
+          remove: (id) => SalaryApi.deductions.remove(id, kyLuongId, nhanVienId),
+        };
+      default: return null;
     }
-  };
+  }, [type, kyLuongId, nhanVienId]);
 
-  const loadKPI = async () => {
+  async function load() {
+    if (!api) return;
+    try { setErr(""); setLoading(true); setItems(await api.list() || []); }
+    catch (e) { setErr(e?.message || String(e)); }
+    finally { setLoading(false); }
+  }
+  useEffect(() => { if (kyLuongId && nhanVienId) load(); /* eslint-disable-next-line */ }, [kyLuongId, nhanVienId, type]);
+
+  async function onAdd() {
     try {
-      const all = await fetchAllStaffSalary({ ky });
-      const sum = (f) => all.reduce((acc, r) => acc + Number(r[f] || 0), 0);
-      setKpi({
-        count: all.length,
-        luongCung: sum('luongCung'),
-        hoaHong: sum('tongHoaHong'),
-        thuong: sum('tongThuong'),
-        truc: sum('tongTruc'),
-        phuCap: sum('tongPhuCapKhac'),
-        phat: sum('tongPhat'),
-        tong: sum('tongLuong'),
-      });
-    } catch (e) {
-      console.error(e);
-      // kệ KPI nếu fail, UI vẫn chạy list chính
-    }
-  };
-
-  useEffect(() => { loadData(); loadKPI(); /* eslint-disable-next-line */ }, [ky, page, pageSize]);
-
-  const handleRecalc = async () => {
-    try {
-      await recalcStaffSalary(ky);
-      await loadData();
-      await loadKPI();
-    } catch (e) {
-      console.error(e);
-      alert('Lỗi kết sổ kỳ NV');
-    }
-  };
-
-  const handleCellEditStop = async (params, event) => {
-    // DataGrid v6: sự kiện này chạy khi cell dừng edit
-    // Ta đọc giá trị mới trực tiếp từ DOM event target nếu có, fallback dùng row snapshot.
-    const { id, field } = params;
-    if (!['luongCung', 'ghiChu'].includes(field)) return;
-
-    let value = event?.target?.value;
-    if (value === undefined) {
-      // fallback: lấy từ row hiện có
-      const row = rows.find(r => r.id === id);
-      value = row ? row[field] : undefined;
-    }
-    try {
-      const payload = {};
-      if (field === 'luongCung') payload.luongCung = Number(value);
-      if (field === 'ghiChu') payload.ghiChu = value;
-      await updateBaseSalary(id, payload);
-      // có thể recalc ở đây, nhưng để nhanh UI, ta chỉ recalc khi user bấm nút — hoặc:
-      await recalcStaffSalary(ky);
-      await loadData();
-      await loadKPI();
-    } catch (e) {
-      console.error(e);
-      alert('Lưu chỉnh sửa thất bại');
-    }
-  };
-
-  const openPenalty = (row) => {
-    setPenForm({
-      nhanVienId: row?.nhanVienId || '',
-      ngayThang: dayjs().format('YYYY-MM-DD'),
-      soTienPhat: -100000,
-      noiDungLoi: 'Vi phạm',
-      chiNhanhId: ''
-    });
-    setPenOpen(true);
-  };
-
-  const submitPenalty = async () => {
-    try {
-      const payload = {
-        ky,
-        nhanVienId: Number(penForm.nhanVienId),
-        ngayThang: penForm.ngayThang,
-        soTienPhat: Number(penForm.soTienPhat),
-        noiDungLoi: penForm.noiDungLoi,
-        chiNhanhId: penForm.chiNhanhId ? Number(penForm.chiNhanhId) : null
+      setSaving(true);
+      const base = {
+        ky_luong_id: Number(kyLuongId),
+        nhan_vien_id: Number(nhanVienId),
+        so_tien: Number(String(draft.so_tien).replaceAll(",", "") || 0),
+        ghi_chu: draft.ghi_chu || null,
       };
-      await addPenalty(payload);
-      setPenOpen(false);
-      await loadData();
-      await loadKPI();
-    } catch (e) {
-      console.error(e);
-      alert('Thêm lỗi/phạt thất bại');
-    }
-  };
-
-  const openHistory = async (row) => {
-    setHisNV(row);
-    setHisOpen(true);
-    setHisPage(0);
-    await fetchHistory(row, 0, hisSize);
-  };
-
-  const fetchHistory = async (row, pageX = hisPage, sizeX = hisSize) => {
-    if (!row) return;
-    setHisLoading(true);
-    try {
-      const { items, page: pg, size, total } = await listPenalties({
-        ky, nhanVienId: row.nhanVienId, page: pageX, size: sizeX
-      });
-      setHisRows(items);
-      setHisPage(pg);
-      setHisSize(size);
-      setHisTotal(total);
-    } catch (e) {
-      console.error(e);
-      setHisRows([]);
-      setHisTotal(0);
-    } finally {
-      setHisLoading(false);
-    }
-  };
-
-  const headerCard = (
-    <Card
-      sx={{
-        mb: 2, borderRadius: 3,
-        background: `linear-gradient(135deg, ${RAS.primary} 0%, ${RAS.secondary} 70%)`,
-        color: 'white',
-      }}
-    >
-      <CardContent>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: 0.2 }}>
-              Lương Nhân Viên
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              Xem, chỉnh sửa lương cứng và thêm lỗi/phạt theo kỳ
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <TextField
-              size="small"
-              type="month"
-              value={ky}
-              onChange={(e) => setKy(e.target.value)}
-              sx={{
-                bgcolor: 'rgba(255,255,255,0.15)',
-                borderRadius: 2,
-                input: { color: 'white' }
-              }}
-            />
-            <Button variant="contained"
-              onClick={handleRecalc}
-              startIcon={<RefreshIcon />}
-              sx={{
-                bgcolor: 'rgba(0,0,0,0.25)',
-                '&:hover': { bgcolor: 'rgba(0,0,0,0.35)' }
-              }}
-            >
-              Kết sổ kỳ
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddCircleOutlineIcon />}
-              onClick={() => openPenalty({})}
-              sx={{
-                bgcolor: 'rgba(0,0,0,0.25)',
-                '&:hover': { bgcolor: 'rgba(0,0,0,0.35)' }
-              }}
-            >
-              Thêm lỗi/phạt
-            </Button>
-          </Stack>
-        </Stack>
-        <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.25)' }} />
-        {/* KPI */}
-        <Grid container spacing={2}>
-          {[
-            { label: 'Nhân viên', val: kpi.count },
-            { label: 'Lương cứng', val: toCurrency(kpi.luongCung) },
-            { label: 'Hoa hồng', val: toCurrency(kpi.hoaHong) },
-            { label: 'Thưởng', val: toCurrency(kpi.thuong) },
-            { label: 'Trực', val: toCurrency(kpi.truc) },
-            { label: 'Phụ cấp', val: toCurrency(kpi.phuCap) },
-            { label: 'Phạt', val: toCurrency(kpi.phat) },
-            { label: 'Tổng', val: toCurrency(kpi.tong) },
-          ].map((k, i) => (
-            <Grid item xs={6} sm={3} md={2} key={i}>
-              <Box
-                sx={{
-                  bgcolor: 'rgba(0,0,0,0.25)',
-                  p: 2, borderRadius: 2,
-                  display: 'flex', flexDirection: 'column', gap: 0.25
-                }}
-              >
-                <Typography variant="caption" sx={{ opacity: 0.9 }}>{k.label}</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>{k.val}</Typography>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-
-  const columns = useMemo(() => ([
-    { field: 'id', headerName: '#', width: 90 },
-    { field: 'nhanVienId', headerName: 'NV ID', width: 100 },
-    { field: 'tenNhanVien', headerName: 'Nhân viên', flex: 1, minWidth: 180 },
-    {
-      field: 'luongCung', headerName: 'Lương cứng', width: 140, editable: true,
-      valueFormatter: ({ value }) => toCurrency(value)
-    },
-    { field: 'tongHoaHong', headerName: 'Hoa hồng', width: 120, valueFormatter: ({ value }) => toCurrency(value) },
-    { field: 'tongThuong', headerName: 'Thưởng', width: 110, valueFormatter: ({ value }) => toCurrency(value) },
-    { field: 'tongTruc', headerName: 'Trực', width: 100, valueFormatter: ({ value }) => toCurrency(value) },
-    { field: 'tongPhuCapKhac', headerName: 'Phụ cấp', width: 120, valueFormatter: ({ value }) => toCurrency(value) },
-    {
-      field: 'tongPhat', headerName: 'Phạt', width: 100,
-      renderCell: ({ value }) => (
-        <Chip
-          size="small"
-          color="error"
-          label={toCurrency(value)}
-          sx={{ bgcolor: 'rgba(255, 107, 107, 0.1)', color: '#FFE5E5' }}
-        />
-      )
-    },
-    {
-      field: 'tongLuong', headerName: 'Tổng lương', width: 150,
-      renderCell: ({ value }) => (
-        <Chip
-          size="small"
-          color="success"
-          label={toCurrency(value)}
-          sx={{ bgcolor: 'rgba(0, 209, 178, 0.1)', color: '#E5FFFA' }}
-        />
-      )
-    },
-    { field: 'ghiChu', headerName: 'Ghi chú', flex: 1, minWidth: 180, editable: true },
-    {
-      field: 'actions', headerName: '', width: 110, sortable: false, filterable: false,
-      renderCell: (params) => (
-        <Stack direction="row" spacing={1}>
-          <Tooltip title="Thêm lỗi/phạt">
-            <IconButton size="small" onClick={() => openPenalty(params.row)}>
-              <WarningAmberIcon htmlColor={RAS.accent} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Lịch sử phạt">
-            <IconButton size="small" onClick={() => openHistory(params.row)}>
-              <HistoryIcon htmlColor={RAS.secondary} />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      )
-    }
-  ]), [kpi]);
+      await api.upsert(buildCreatePayload ? buildCreatePayload(base) : base);
+      setDraft({ so_tien: "", ghi_chu: "" });
+      await load();
+    } finally { setSaving(false); }
+  }
+  async function onDelete(id) { if (confirm("Xoá mục này?")) { await api.remove(id); await load(); } }
 
   return (
-    <Box sx={{ p: 2, bgcolor: RAS.ink, minHeight: '100vh' }}>
-      {headerCard}
+    <Section
+      title={title}
+      right={
+        <div className="flex items-end gap-2">
+          <label className="text-xs">
+            <div>Số tiền</div>
+            <input className="border rounded px-2 py-1 w-40" inputMode="numeric"
+                   value={draft.so_tien} onChange={e=>setDraft(d=>({...d,so_tien:e.target.value}))}
+                   placeholder="vd 300000" />
+          </label>
+          <label className="text-xs">
+            <div>Ghi chú</div>
+            <input className="border rounded px-2 py-1 w-60"
+                   value={draft.ghi_chu} onChange={e=>setDraft(d=>({...d,ghi_chu:e.target.value}))}
+                   placeholder="tuỳ chọn" />
+          </label>
+          <button className="px-3 py-2 rounded text-white disabled:opacity-50"
+                  style={{ background: `linear-gradient(90deg, ${RAS.primary}, ${RAS.accent2})` }}
+                  onClick={onAdd} disabled={saving}>
+            {saving ? "Đang lưu…" : "Thêm"}
+          </button>
+        </div>
+      }
+    >
+      {err && <div className="rounded border border-red-200 bg-red-50 text-red-700 px-3 py-2 mb-2">Lỗi: {err}</div>}
+      {loading ? "Đang tải…" : (
+        <div className="overflow-auto">
+          <table className="min-w-[680px] w-full">
+            <thead className="bg-gray-50">
+              <tr className="[&>th]:px-3 [&>th]:py-2 text-left text-sm">
+                <th>ID</th>
+                {columns.map(c => <th key={c.key}>{c.label}</th>)}
+                <th></th>
+              </tr>
+            </thead>
+            <tbody className="text-sm">
+              {items.map(it => (
+                <tr key={it.id} className="border-t">
+                  <td className="px-3 py-2">{it.id}</td>
+                  {columns.map(c => (
+                    <td key={c.key} className="px-3 py-2">
+                      {c.render ? c.render(it) : String(it[c.key] ?? "")}
+                    </td>
+                  ))}
+                  <td className="px-3 py-2 text-right">
+                    <button className="px-2 py-1 text-red-600 hover:bg-red-50 rounded" onClick={()=>onDelete(it.id)}>Xoá</button>
+                  </td>
+                </tr>
+              ))}
+              {!items.length && <tr><td className="px-3 py-6 text-center text-gray-500" colSpan={columns.length+2}>Chưa có dữ liệu.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Section>
+  );
+}
 
-      <Card sx={{ borderRadius: 3, bgcolor: RAS.card, color: 'white' }}>
-        <CardContent>
-          <div style={{ height: 600, width: '100%' }}>
-            <DataGrid
-              rows={rows}
-              columns={columns}
-              getRowId={(r) => r.id}
-              onCellEditStop={handleCellEditStop}
-              pagination
-              paginationModel={{ page, pageSize }}
-              onPaginationModelChange={(m) => { setPage(m.page); setPageSize(m.pageSize); }}
-              rowCount={rowCount}
-              paginationMode="server"
-              loading={loading}
-              sx={{
-                border: 0,
-                color: 'white',
-                '& .MuiDataGrid-columnHeaders': { bgcolor: RAS.surface, color: '#E5E9F5' },
-                '& .MuiDataGrid-row:hover': { bgcolor: '#0f1731' },
-                '& .MuiDataGrid-cell': { borderColor: '#1f2947' },
-                '& .MuiDataGrid-footerContainer': { bgcolor: RAS.surface },
-              }}
-            />
+/* ===================== PAGE ===================== */
+export default function EmployeeSalary() {
+  const [periodCode, setPeriodCode] = useState("");       // MYYYY (vd 92025)
+  const [nhanVienId, setNhanVienId] = useState("");
+  const [kyLuongId, setKyLuongId] = useState(null);
+  const [period, setPeriod] = useState(null);             // {month, year}
+  const [row, setRow] = useState(null);
+  const [teacherName, setTeacherName] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const canQuery = useMemo(() => periodCode && nhanVienId, [periodCode, nhanVienId]);
+  async function loadHeader() {
+    if (!canQuery) return;
+    setLoading(true);
+    try {
+      const { kyLuongId, period } = await resolveKyLuongIdByPeriod(periodCode);
+      setKyLuongId(kyLuongId);
+      setPeriod(period);
+
+      // lấy tên nhân viên
+      try {
+        const emp = await EmployeesApi.get(Number(nhanVienId));
+        setTeacherName(emp?.ho_ten || emp?.hoTen || `#${nhanVienId}`);
+      } catch { setTeacherName(`#${nhanVienId}`); }
+
+      // lấy 1 dòng tổng lương của NV
+      const rows = (await SalaryApi.list(Number(kyLuongId))) || [];
+      const found = rows.find((r) => String(r.nhan_vien_id) === String(nhanVienId));
+      setRow(found || null);
+    } catch (e) {
+      alert(e.message || String(e));
+    } finally { setLoading(false); }
+  }
+
+  useEffect(() => { setRow(null); }, [periodCode, nhanVienId]);
+
+  const totals = useMemo(() => {
+    const r = row || {};
+    return {
+      luong_cung: r.luong_cung ?? 0,
+      tong_hoa_hong: r.tong_hoa_hong ?? 0,
+      tong_thuong: r.tong_thuong ?? 0,
+      tong_truc: r.tong_truc ?? 0,
+      tong_phu_cap_khac: r.tong_phu_cap_khac ?? 0,
+      tong_phat: r.tong_phat ?? 0,
+      tong_luong: r.tong_luong ?? 0,
+    };
+  }, [row]);
+
+  function exportExcel() {
+    // Xuất CSV (Excel mở được) cho nhanh gọn – không dùng lib ngoài
+    const p = period || parsePeriodCode(periodCode);
+    const header = ["Nhân viên","Tháng/Năm","Lương cứng","Hoa hồng","Thưởng","Trực","Phụ cấp khác","Phạt/KL","Tổng lương"];
+    const data = [[
+      teacherName || `#${nhanVienId}`,
+      p ? `${p.month}/${p.year}` : periodCode,
+      totals.luong_cung, totals.tong_hoa_hong, totals.tong_thuong,
+      totals.tong_truc, totals.tong_phu_cap_khac, totals.tong_phat,
+      totals.tong_luong,
+    ]];
+    const rows = [header, ...data]
+      .map(cols => cols.map(v => `"${String(v).replace(/"/g,'""')}"`).join(","))
+      .join("\r\n");
+    const blob = new Blob(["\uFEFF" + rows], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    const fileName = `salary_${(teacherName||nhanVienId).toString().replace(/\s+/g,'_')}_${p?.year||''}_${p?.month||''}.csv`;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  const periodOk = parsePeriodCode(periodCode);
+
+  return (
+    <div className="p-6 space-y-5">
+      {/* Header brand */}
+      <div className="rounded-2xl px-4 py-3 flex items-center justify-between shadow-sm"
+           style={{ background: RAS.softBg }}>
+        <h2 className="font-semibold" style={{ color: RAS.primary }}>Bảng lương giáo viên</h2>
+        <div className="text-sm opacity-80">RAS Finance · tra cứu & chỉnh sửa</div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className="text-sm block">ThángNăm (MYYYY)</label>
+          <input
+            value={periodCode}
+            onChange={(e) => setPeriodCode(e.target.value)}
+            placeholder="vd: 92025 = 9/2025"
+            className="border rounded px-3 py-2 w-48"
+          />
+          {!periodOk && periodCode && (
+            <div className="text-xs text-red-600 mt-1">Định dạng không hợp lệ (MYYYY, ví dụ 92025)</div>
+          )}
+        </div>
+        <div>
+          <label className="text-sm block">Nhân viên ID</label>
+          <input
+            value={nhanVienId}
+            onChange={(e) => setNhanVienId(e.target.value)}
+            placeholder="vd: 3001"
+            className="border rounded px-3 py-2 w-40"
+          />
+        </div>
+        <button
+          onClick={loadHeader}
+          className="px-4 py-2 rounded text-white disabled:opacity-50"
+          style={{ background: `linear-gradient(90deg, ${RAS.primary}, ${RAS.accent2})` }}
+          disabled={!canQuery || !periodOk || loading}
+        >
+          Tải dữ liệu
+        </button>
+        <button
+          onClick={exportExcel}
+          className="px-4 py-2 rounded border"
+          style={{ borderColor: "#ECE9FF", color: RAS.primary }}
+          disabled={!row}
+          title="Xuất Excel (CSV)"
+        >
+          ⤓ Xuất Excel
+        </button>
+      </div>
+
+      {/* Summary */}
+      <div className="rounded-2xl p-4" style={{ background: RAS.softBg }}>
+        <div className="flex flex-wrap items-center gap-4">
+          <div>
+            <div className="text-xs uppercase text-slate-500">Nhân viên</div>
+            <div className="text-lg font-semibold" style={{ color: RAS.primary }}>
+              {teacherName ? teacherName : (nhanVienId ? `#${nhanVienId}` : "—")}
+            </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Dialog thêm lỗi/phạt */}
-      <Dialog open={penOpen} onClose={() => setPenOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Thêm lỗi/phạt</DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={2} sx={{ pt: 1 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Nhân viên ID"
-                value={penForm.nhanVienId}
-                onChange={e => setPenForm(p => ({ ...p, nhanVienId: e.target.value }))}
-                fullWidth />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Ngày"
-                type="date"
-                value={penForm.ngayThang}
-                onChange={e => setPenForm(p => ({ ...p, ngayThang: e.target.value }))}
-                InputLabelProps={{ shrink: true }}
-                fullWidth />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Số tiền phạt (âm để trừ)"
-                type="number"
-                value={penForm.soTienPhat}
-                onChange={e => setPenForm(p => ({ ...p, soTienPhat: e.target.value }))}
-                fullWidth />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Chi nhánh ID (tuỳ chọn)"
-                value={penForm.chiNhanhId}
-                onChange={e => setPenForm(p => ({ ...p, chiNhanhId: e.target.value }))}
-                fullWidth />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Nội dung lỗi"
-                value={penForm.noiDungLoi}
-                onChange={e => setPenForm(p => ({ ...p, noiDungLoi: e.target.value }))}
-                fullWidth multiline />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPenOpen(false)}>Huỷ</Button>
-          <Button variant="contained" onClick={submitPenalty}>Lưu</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dialog lịch sử phạt */}
-      <Dialog open={hisOpen} onClose={() => setHisOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          Lịch sử phạt — {hisNV?.tenNhanVien} (NV #{hisNV?.nhanVienId})
-        </DialogTitle>
-        <DialogContent dividers>
-          <div style={{ height: 420, width: '100%' }}>
-            <DataGrid
-              rows={hisRows}
-              columns={[
-                { field: 'id', headerName: '#', width: 80 },
-                { field: 'ngayThang', headerName: 'Ngày', width: 120, valueFormatter: ({ value }) => toDateStr(value) },
-                { field: 'soTienPhat', headerName: 'Số tiền', width: 140, valueFormatter: ({ value }) => toCurrency(value) },
-                { field: 'noiDungLoi', headerName: 'Nội dung', flex: 1, minWidth: 220 },
-                { field: 'chiNhanhId', headerName: 'CN', width: 100 },
-              ]}
-              getRowId={(r) => r.id}
-              pagination
-              paginationModel={{ page: hisPage, pageSize: hisSize }}
-              onPaginationModelChange={(m) => {
-                setHisPage(m.page);
-                setHisSize(m.pageSize);
-                fetchHistory(hisNV, m.page, m.pageSize);
-              }}
-              rowCount={hisTotal}
-              paginationMode="server"
-              loading={hisLoading}
-            />
+          <div className="h-10 w-px bg-gray-300" />
+          <div>
+            <div className="text-xs uppercase text-slate-500">Kỳ lương</div>
+            <div className="text-lg font-semibold" style={{ color: RAS.primary }}>
+              {period ? fmtPeriod(period) : (periodCode ? `#${periodCode}` : "—")}
+            </div>
           </div>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setHisOpen(false)}>Đóng</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+          <div className="ml-auto text-right">
+            <div className="text-xs uppercase text-slate-500">Tổng lương</div>
+            <div className="text-2xl font-bold" style={{ color: RAS.accent1 }}>{currency(totals.tong_luong)}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-4">
+          <div className="rounded-lg bg-white border p-3"><div className="text-xs text-gray-500">Lương cứng</div><div className="font-semibold">{currency(totals.luong_cung)}</div></div>
+          <div className="rounded-lg bg-white border p-3"><div className="text-xs text-gray-500">Hoa hồng</div><div className="font-semibold">{currency(totals.tong_hoa_hong)}</div></div>
+          <div className="rounded-lg bg-white border p-3"><div className="text-xs text-gray-500">Thưởng</div><div className="font-semibold">{currency(totals.tong_thuong)}</div></div>
+          <div className="rounded-lg bg-white border p-3"><div className="text-xs text-gray-500">Trực</div><div className="font-semibold">{currency(totals.tong_truc)}</div></div>
+          <div className="rounded-lg bg-white border p-3"><div className="text-xs text-gray-500">Phụ cấp</div><div className="font-semibold">{currency(totals.tong_phu_cap_khac)}</div></div>
+          <div className="rounded-lg bg-white border p-3"><div className="text-xs text-gray-500">Phạt/KL</div><div className="font-semibold">{currency(totals.tong_phat)}</div></div>
+        </div>
+      </div>
+
+      {/* Chi tiết */}
+      <ListEditor
+        title="Hoa hồng chốt lớp"
+        type="commissions"
+        kyLuongId={kyLuongId}
+        nhanVienId={nhanVienId}
+        columns={[
+          { key: "so_tien", label: "Số tiền", render: (it) => currency(it.so_tien) },
+          { key: "ghi_chu", label: "Ghi chú" },
+        ]}
+      />
+      <ListEditor
+        title="Thưởng bậc"
+        type="bonus_tiers"
+        kyLuongId={kyLuongId}
+        nhanVienId={nhanVienId}
+        columns={[
+          { key: "muc_thuong", label: "Mức thưởng", render: (it) => currency(it.muc_thuong) },
+          { key: "so_hv_moi", label: "Số HV mới" },
+          { key: "ghi_chu", label: "Ghi chú" },
+        ]}
+        buildCreatePayload={(base) => ({ ...base, muc_thuong: base.so_tien, so_hv_moi: 0 })}
+      />
+      <ListEditor
+        title="Thưởng khác"
+        type="bonus_others"
+        kyLuongId={kyLuongId}
+        nhanVienId={nhanVienId}
+        columns={[
+          { key: "so_tien", label: "Số tiền", render: (it) => currency(it.so_tien) },
+          { key: "noi_dung", label: "Nội dung", render: (it) => it.noi_dung || it.ghi_chu || "" },
+        ]}
+        buildCreatePayload={(base) => ({ ...base, noi_dung: base.ghi_chu || "Khác" })}
+      />
+      <ListEditor
+        title="Trực"
+        type="shifts"
+        kyLuongId={kyLuongId}
+        nhanVienId={nhanVienId}
+        columns={[
+          { key: "ngay", label: "Ngày" },
+          { key: "ca", label: "Ca" },
+          { key: "so_tien", label: "Số tiền", render: (it) => currency(it.so_tien) },
+          { key: "ghi_chu", label: "Ghi chú" },
+        ]}
+        buildCreatePayload={(base) => ({ ...base, ngay: new Date().toISOString().slice(0, 10), ca: "ca_ngay" })}
+      />
+      <ListEditor
+        title="Phụ cấp khác"
+        type="allowances"
+        kyLuongId={kyLuongId}
+        nhanVienId={nhanVienId}
+        columns={[
+          { key: "noi_dung", label: "Nội dung", render: (it) => it.noi_dung || it.ghi_chu || "" },
+          { key: "so_tien", label: "Số tiền", render: (it) => currency(it.so_tien) },
+        ]}
+        buildCreatePayload={(base) => ({ ...base, noi_dung: base.ghi_chu || "Khác" })}
+      />
+      <ListEditor
+        title="Phạt / Kỷ luật"
+        type="deductions"
+        kyLuongId={kyLuongId}
+        nhanVienId={nhanVienId}
+        columns={[
+          { key: "noi_dung", label: "Nội dung", render: (it) => it.noi_dung || it.ghi_chu || "" },
+          { key: "so_tien_phat", label: "Số tiền phạt", render: (it) => currency(it.so_tien_phat) },
+          { key: "ngay_thang", label: "Ngày" },
+        ]}
+        buildCreatePayload={(base) => ({ ...base, so_tien_phat: base.so_tien, ngay_thang: new Date().toISOString().slice(0, 10) })}
+      />
+    </div>
   );
 }
