@@ -1,30 +1,41 @@
+// backend/src/main/java/com/ras/service/salary/ProcCaller.java
 package com.ras.service.salary;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.CallableStatementCallback;
+import org.springframework.jdbc.core.CallableStatementCreator;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import javax.sql.DataSource;
-import java.sql.*;
+import java.sql.CallableStatement;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-@Component @RequiredArgsConstructor
+@Component
+@RequiredArgsConstructor
 public class ProcCaller {
-  private final DataSource dataSource;
+    private final JdbcTemplate jdbc;
 
-  public void runTinhLuongGv(String thang, Long chiNhanhId) throws SQLException {
-    try (Connection c = dataSource.getConnection();
-         CallableStatement cs = c.prepareCall("{ call sp_tinh_luong_gv(?,?) }")) {
-      cs.setString(1, thang);
-      if (chiNhanhId == null) cs.setNull(2, Types.BIGINT); else cs.setLong(2, chiNhanhId);
-      cs.execute();
-    }
-  }
+    public void call(String procName, Object... args) {
+        int n = (args == null) ? 0 : args.length;
+        String placeholders = IntStream.range(0, n)
+                .mapToObj(i -> "?")
+                .collect(Collectors.joining(","));
+        final String callSql = "{ call " + procName + "(" + placeholders + ") }";
 
-  public void runTinhLuongNv(String thang, Long chiNhanhId) throws SQLException {
-    try (Connection c = dataSource.getConnection();
-         CallableStatement cs = c.prepareCall("{ call sp_tinh_luong_nv(?,?) }")) {
-      cs.setString(1, thang);
-      if (chiNhanhId == null) cs.setNull(2, Types.BIGINT); else cs.setLong(2, chiNhanhId);
-      cs.execute();
+        CallableStatementCreator csc = (con) -> {
+            CallableStatement cs = con.prepareCall(callSql);
+            for (int i = 0; i < n; i++) {
+                cs.setObject(i + 1, args[i]);
+            }
+            return cs;
+        };
+
+        CallableStatementCallback<Void> action = (cs) -> {
+            cs.execute();
+            return null;
+        };
+
+        jdbc.execute(csc, action);
     }
-  }
 }

@@ -146,35 +146,70 @@ html, body, #root {
     linear-gradient(180deg, #ffffff 0%, #fbfbfb 100%);
 }
 
-/* ========= RAS components ========= */
+/* ========= RAS components (no Tailwind custom util deps) ========= */
 @layer components {
   .ras-glass {
-    @apply bg-white/40 backdrop-blur-md rounded-2xl shadow-glass border border-white/30;
+    /* bg-white/40 + backdrop-blur + border-white/30 + shadow-glass */
+    background: rgba(255, 255, 255, 0.4);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 10px 25px rgba(0,0,0,.25);
   }
+
   .ras-chip {
-    @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-ras-primary/10 text-ras-primary;
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; font-size: 12px; font-weight: 600; border-radius: 9999px;
+    background: rgba(229, 26, 76, 0.10);             /* bg-ras-primary/10 */
+    color: var(--ras-primary);                       /* text-ras-primary */
   }
+
   .ras-btn {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition
-           bg-ras-primary text-white hover:bg-ras-primary/90 shadow-ras active:scale-[.98];
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 12px; font-weight: 700;
+    transition: all .15s ease; transform: translateZ(0);
+    background: var(--ras-primary); color: #fff;     /* bg-ras-primary text-white */
+    box-shadow: 0 10px 30px rgba(229, 26, 76, .25);  /* shadow-ras */
   }
+  .ras-btn:hover { filter: brightness(.95); }
+  .ras-btn:active { transform: scale(.98); }
+
   .ras-outline {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition
-           border border-ras-primary text-ras-primary hover:bg-ras-primary/10;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 12px; font-weight: 700;
+    transition: all .15s ease;
+    border: 1px solid var(--ras-primary);            /* border-ras-primary */
+    color: var(--ras-primary);
+    background: transparent;
   }
+  .ras-outline:hover { background: rgba(229, 26, 76, .10); }  /* hover:bg-ras-primary/10 */
+
   .ras-card {
-    @apply rounded-2xl bg-white shadow-lg hover:shadow-ras transition;
+    border-radius: 16px; background: #fff;
+    box-shadow: 0 6px 24px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.03);
+    transition: box-shadow .2s ease;
   }
+  .ras-card:hover { box-shadow: 0 12px 32px rgba(229,26,76,.25); } /* hover:shadow-ras */
+
   .ras-kpi {
-    @apply ras-card p-5 relative overflow-hidden;
+    padding: 20px; position: relative; overflow: hidden;
   }
+
   .ras-tabs {
-    @apply flex gap-2 p-1 bg-white/60 rounded-2xl;
+    display: flex; gap: 8px; padding: 6px;
+    background: rgba(255,255,255,.6); border-radius: 16px;
   }
+
   .ras-tab {
-    @apply px-4 py-2 rounded-xl font-semibold text-ras-dark/70 hover:bg-ras-primary/10 transition;
+    padding: 8px 16px; border-radius: 12px; font-weight: 600;
+    color: rgba(18,18,18,.7);
+    transition: background .2s ease, color .2s ease, box-shadow .2s ease;
   }
+  .ras-tab:hover { background: rgba(229, 26, 76, .10); }       /* hover:bg-ras-primary/10 */
+
   .ras-tab--active {
-    @apply bg-ras-primary text-white shadow-ras;
+    background: var(--ras-primary); color: #fff;
+    box-shadow: 0 10px 30px rgba(229, 26, 76, .25);            /* shadow-ras */
   }
 }

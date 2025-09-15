@@ -6,7 +6,7 @@ import { School, Paid, ReceiptLong } from '@mui/icons-material';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import axios from 'axios';
 import {
-  AppBar, Toolbar, Typography, Box, Tabs, Tab, Paper, Grid, Button,
+  Box, Tabs, Tab, Paper, Grid, Button,
   TextField, IconButton, Snackbar, Alert, Dialog, DialogTitle, DialogContent,
   DialogActions, FormControl, InputLabel, Select, MenuItem, Stack, Divider
 } from '@mui/material';
@@ -216,26 +216,30 @@ export default function Salary() {
   }, [kyLuongId, chiNhanhId, nhanVienId]);
 
   const buoi = usePaged(fetchBuoi, [kyLuongId, chiNhanhId, nhanVienId]);
-
+  
   const fetchGvPayroll = useCallback(async ({ page, size }) => {
     if (!kyLuongId) return { content: [], totalElements: 0 };
-    const { data } = await api.get(`/teacher/payroll`, { params: { kyLuongId, page, size }});
+    const { data } = await api.get(`/teacher/payroll`, { params: { kyLuongId, page, size } });
     return data;
   }, [kyLuongId]);
 
   const gvPayroll = usePaged(fetchGvPayroll, [kyLuongId]);
-  const totalBuoi = buoi.rowCount || 0;
-  const sumTeacher = (gvPayroll.rows || []).reduce((s, r) => s + Number(r.tongLuong || 0), 0);
-  const sumStaff   = (nvPayroll.rows || []).reduce((s, r) => s + Number(r.tongLuong || 0), 0);
-  const totalPay   = sumTeacher + sumStaff;
-  const avgPerBuoi = totalBuoi ? Math.round(sumTeacher / totalBuoi) : 0;
+
   const fetchNvPayroll = useCallback(async ({ page, size }) => {
     if (!kyLuongId) return { content: [], totalElements: 0 };
-    const { data } = await api.get(`/staff/payroll`, { params: { kyLuongId, page, size }});
+    const { data } = await api.get(`/staff/payroll`, { params: { kyLuongId, page, size } });
     return data;
   }, [kyLuongId]);
-
   const nvPayroll = usePaged(fetchNvPayroll, [kyLuongId]);
+
+  const { totalBuoi, sumTeacher, sumStaff, totalPay, avgPerBuoi } = useMemo(() => {
+    const totalBuoi = buoi.rowCount || 0;
+    const sumTeacher = (gvPayroll.rows || []).reduce((s, r) => s + Number(r.tongLuong || 0), 0);
+    const sumStaff   = (nvPayroll.rows || []).reduce((s, r) => s + Number(r.tongLuong || 0), 0);
+    const totalPay   = sumTeacher + sumStaff;
+    const avgPerBuoi = totalBuoi ? Math.round(sumTeacher / totalBuoi) : 0;
+    return { totalBuoi, sumTeacher, sumStaff, totalPay, avgPerBuoi };
+  }, [buoi.rowCount, gvPayroll.rows, nvPayroll.rows]);
 
   // RULE: Đơn giá
   const [dgFilter, setDgFilter] = useState({});
@@ -444,34 +448,23 @@ export default function Salary() {
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="sticky" elevation={0}>
-          <Toolbar>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>RAS — Salary</Typography>
-            <Box sx={{ flexGrow: 1 }} />
-            <Stack direction="row" spacing={1}>
-              <Button variant="contained" color="secondary" onClick={importDiemDanh}>Import điểm danh</Button>
-              <Button variant="outlined" startIcon={<RunIcon/>} onClick={runTeacher}>Tính lương GV</Button>
-              <Button variant="outlined" startIcon={<RunIcon/>} onClick={runStaff}>Tính lương NV</Button>
-            </Stack>
-          </Toolbar>
-        </AppBar>
 
         {/* Filters */}
         <Paper sx={{ p: 2, m: 2 }}>
           {/* HERO */}
-<div className="px-4 pb-2">
-  <RasHero
-    title="Bảng lương RAS — Salary Center"
-    subtitle={thang ? `Kỳ: ${thang}${chiNhanhId ? ` • CN #${chiNhanhId}` : ''}` : "Chọn Tháng để chạy tổng hợp"}
-    actions={
-      <>
-        <button className="ras-outline" onClick={importDiemDanh}>Import điểm danh</button>
-        <button className="ras-btn" onClick={runTeacher}>Tính lương GV</button>
-        <button className="ras-btn" onClick={runStaff}>Tính lương NV</button>
-      </>
-    }
-  />
-</div>
+          <div className="px-4 pb-2">
+            <RasHero
+              title="Bảng lương RAS — Salary Center"
+              subtitle={thang ? `Kỳ: ${thang}${chiNhanhId ? ` • CN #${chiNhanhId}` : ''}` : "Chọn Tháng để chạy tổng hợp"}
+              actions={
+                <>
+                  <button className="ras-outline" onClick={importDiemDanh}>Import điểm danh</button>
+                  <button className="ras-btn" onClick={runTeacher}>Tính lương GV</button>
+                  <button className="ras-btn" onClick={runStaff}>Tính lương NV</button>
+                </>
+              }
+            />
+          </div>
 
 {/* KPI ROW */}
 <div className="px-4 pb-2">
