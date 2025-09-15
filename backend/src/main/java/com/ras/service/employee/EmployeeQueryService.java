@@ -1,11 +1,10 @@
 package com.ras.service.employee;
 
-import com.ras.web.api.common.PageResponse;
 import com.ras.service.employee.dto.EmployeeDetailDto;
 import com.ras.service.employee.dto.EmployeeListDto;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 
 public interface EmployeeQueryService {
-    PageResponse<EmployeeListDto> list(String q, String role, Pageable pageable);
-    EmployeeDetailDto get(Long id);
+    Page<EmployeeListDto> search(String kw, String role, int page, int size);
+    EmployeeDetailDto getById(Long id);
 }

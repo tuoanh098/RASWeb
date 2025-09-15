@@ -1,7 +1,6 @@
 package com.ras.service.employee.dto;
 
 import lombok.*;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -23,10 +22,6 @@ public class EmployeeDetailDto {
     private String maSoThue;
     private LocalDate ngayVaoLam;
     private Integer soNamKinhNghiem;
-
-    private BigDecimal luongCoBan;
-    private BigDecimal heSoLuong;
-    private BigDecimal phuCap;
 
     private String hinhThucLamViec;
     private String ghiChu;

@@ -1,63 +1,107 @@
 package com.ras.web.api.employee;
 
-import com.ras.service.employee.*;
-import com.ras.service.employee.dto.*;
-import com.ras.web.api.common.PageResponse;
-import lombok.RequiredArgsConstructor;
+import com.ras.domain.employee.Employee;
+import com.ras.domain.employee.EmployeeRepository;
+import com.ras.service.employee.EmployeeCommandService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.*;
-import org.springframework.http.MediaType;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
-import java.util.Map;
+
+import jakarta.persistence.criteria.Predicate;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/employees")
-@RequiredArgsConstructor
 public class EmployeeController {
 
-    private final EmployeeQueryService queryService;
+    private final EmployeeRepository repo;
     private final EmployeeCommandService commandService;
-    
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public PageResponse<EmployeeListDto> list(
-            @RequestParam(name="page", defaultValue="0") int page,
-            @RequestParam(name="size", defaultValue="10") int size,
-            @RequestParam(name="q", required=false) String q,
-            @RequestParam(name="role", required=false) String role
+
+    public EmployeeController(EmployeeRepository repo, EmployeeCommandService commandService) {
+        this.repo = repo;
+        this.commandService = commandService;
+    }
+
+    /* =================== LIST (có tìm kiếm) =================== */
+    @GetMapping
+    public Map<String, Object> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false, name = "q") String q,
+            @RequestParam(required = false, name = "role") String role
     ) {
-        Pageable pageable = PageRequest.of(Math.max(page,0), Math.min(size,500), Sort.by(Sort.Direction.DESC, "id"));
-        return queryService.list(q, role, pageable);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1), Sort.by(Sort.Direction.DESC, "id"));
+
+        Specification<Employee> spec = (root, query, cb) -> {
+            List<Predicate> ps = new ArrayList<>();
+            if (q != null && !q.isBlank()) {
+                String like = "%" + q.trim() + "%";
+                ps.add(cb.or(
+                        cb.like(cb.lower(root.get("hoTen")), like.toLowerCase()),
+                        cb.like(cb.lower(root.get("soDienThoai")), like.toLowerCase()),
+                        cb.like(cb.lower(root.get("email")), like.toLowerCase())
+                ));
+            }
+            if (role != null && !role.isBlank()) {
+                ps.add(cb.equal(root.get("vaiTro"), role));
+            }
+            return cb.and(ps.toArray(new Predicate[0]));
+        };
+
+        Page<Employee> p = repo.findAll(spec, pageable);
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("items", p.getContent());
+        res.put("page", p.getNumber());
+        res.put("size", p.getSize());
+        res.put("totalElements", p.getTotalElements());
+        res.put("totalPages", p.getTotalPages());
+        return res;
     }
 
-    @GetMapping(value="/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public EmployeeDetailDto get(@PathVariable("id") Long id) {
-        return queryService.get(id);
+    /* =================== DETAIL =================== */
+    @GetMapping("/{id}")
+    public Employee get(@PathVariable("id") Long id) {
+        return repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên"));
     }
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, Long> create(@RequestBody EmployeeUpsertReq req) {
-        return Map.of("id", commandService.create(req));
+    /* =================== CREATE =================== */
+    @PostMapping
+    public ResponseEntity<Employee> create(@RequestBody Employee body) {
+        Employee saved = commandService.create(body);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    @PutMapping(value="/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, Long> update(@PathVariable("id") Long id, @RequestBody EmployeeUpsertReq req) {
-        commandService.update(id, req);
-        return Map.of("id", id);
+    /* =================== UPDATE =================== */
+    @PutMapping("/{id}")
+    public Employee update(@PathVariable("id") Long id, @RequestBody Employee patch) {
+        return commandService.update(id, patch);
     }
 
+    /* =================== DELETE: cứng -> fallback ngưng hoạt động =================== */
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable("id") Long id) {
-        commandService.delete(id);
+    public ResponseEntity<?> delete(@PathVariable("id") Long id) {
+        try {
+            commandService.deleteHard(id); // thử xoá cứng
+            return ResponseEntity.noContent().build();
+        } catch (DataIntegrityViolationException ex) {
+            // bị FK cản, chuyển sang ngưng hoạt động
+            Employee e = commandService.deactivate(id);
+            Map<String, Object> body = Map.of(
+                    "message", "Nhân viên còn được tham chiếu (ví dụ: lịch trực). Đã chuyển trạng thái sang 'Ngưng hoạt động'.",
+                    "employee", e
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+        }
     }
 
+    /* =================== UPLOAD AVATAR =================== */
     @PostMapping(path = "/{id}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Map<String, String> uploadAvatar(
-            @PathVariable("id") Long id,
-            @RequestParam("file") MultipartFile file
-    ) throws IOException {
+    public Map<String, Object> uploadAvatar(@PathVariable("id") Long id, @RequestParam("file") MultipartFile file) {
         String url = commandService.saveAvatarAndReturnUrl(id, file);
-        commandService.updateAvatarUrl(id, url);
-        return Map.of("avatar_url", url);
+        return Map.of("url", url, "updatedAt", LocalDateTime.now());
     }
 }

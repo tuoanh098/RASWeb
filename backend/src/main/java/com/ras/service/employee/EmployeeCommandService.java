@@ -1,18 +1,20 @@
 package com.ras.service.employee;
 
-import java.io.IOException;
-
+import com.ras.domain.employee.Employee;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.ras.service.employee.dto.EmployeeUpsertReq;
-
 public interface EmployeeCommandService {
-    Long create(EmployeeUpsertReq req);
-    void update(Long id, EmployeeUpsertReq req);
-    void delete(Long id);
-        /** Lưu file avatar lên server và trả về URL public */
-    String saveAvatarAndReturnUrl(Long id, MultipartFile file) throws IOException;
 
-    /** Cập nhật cột avatar_url của nhân viên */
-    void updateAvatarUrl(Long id, String url);
+    Employee create(Employee payload);
+
+    Employee update(Long id, Employee patch);
+
+    /** Thử xoá cứng; nếu DB chặn vì FK thì ném DataIntegrityViolationException cho controller bắt. */
+    void deleteHard(Long id);
+
+    /** Fallback khi xoá cứng thất bại: chuyển hoat_dong = false. */
+    Employee deactivate(Long id);
+
+    /** Lưu file avatar vào uploads/avatars/ và cập nhật trường avatar_url. */
+    String saveAvatarAndReturnUrl(Long id, MultipartFile file);
 }

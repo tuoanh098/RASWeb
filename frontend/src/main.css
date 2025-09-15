@@ -18,6 +18,20 @@
 .table { @apply w-full text-left; }
 .table th { @apply text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 pb-2; }
 .table td { @apply border-b border-slate-100 py-3; }
+:root{
+  --ras-primary:#4434C2;
+  --ras-accent1:#FF6F61;
+  --ras-accent2:#22B8B5;
+}
+.btn.btn-primary{
+  background-image: linear-gradient(90deg, var(--ras-primary), var(--ras-accent2)) !important;
+  border:none !important;
+  color:#fff;
+}
+.card-header.ras-soft{
+  background: linear-gradient(135deg,#f8f7ff 0%, #fffdf8 100%);
+  border-bottom:1px solid #ece9ff;
+}
 @layer components {
   .compact-modal {
     @apply text-[13px];
@@ -41,5 +55,126 @@
   .compact-form .table th,
   .compact-form .table td {
     @apply text-[13px];
+  }
+}
+
+/* ====== RAS brand palette ====== */
+:root{
+  --ras-indigo:#263b8f;    /* indigo logo */
+  --ras-purple:#5b3fb3;    /* tím chủ đạo */
+  --ras-violet:#7c4dff;    /* điểm nhấn */
+  --ras-pink:#e5569a;      /* hồng signature */
+  --ras-coral:#ff7a59;     /* phụ */
+  --ras-ink:#3b2b67;       /* text đậm */
+  --ras-bg:#f7f6fb;        /* nền nhẹ */
+}
+
+/* Header / bar gradient */
+.ras-gradient {
+  background-image: linear-gradient(90deg, var(--ras-indigo), var(--ras-purple) 45%, var(--ras-pink));
+  color:#fff;
+}
+
+/* Primary button theo màu RAS (giữ nguyên API .btn .btn-primary) */
+.btn.btn-primary{
+  background-image: linear-gradient(90deg, var(--ras-purple), var(--ras-violet));
+  color:#fff; border-color: transparent;
+}
+.btn.btn-primary:hover{ filter:brightness(0.95); transform: translateY(-1px); }
+.btn.btn-primary:active{ transform: translateY(0); }
+
+/* Secondary (nhẹ) */
+.btn-ras-soft{
+  background: #fff; color: var(--ras-ink);
+  border:1px solid rgba(123,77,255,.25);
+}
+.btn-ras-soft:hover{ background: rgba(124,77,255,.06); }
+
+/* Select / input viền tím nhạt khi focus */
+.input:focus, .select:focus{
+  outline: none; box-shadow: 0 0 0 3px rgba(124,77,255,.15);
+  border-color: var(--ras-violet);
+}
+
+/* Card bo mềm + viền tím nhạt */
+.card{ border-color: rgba(124,77,255,.15); border-radius: 16px; }
+.card-header{ border-bottom-color: rgba(124,77,255,.15); }
+
+/* Table hover */
+.table tbody tr:hover{ background: rgba(124,77,255,.06); }
+
+/* Chip vai trò */
+.badge{
+  display:inline-flex; align-items:center; gap:.375rem;
+  height:26px; padding:0 .625rem; border-radius:999px;
+  font-size:.75rem; font-weight:600; border:1px solid transparent;
+}
+.badge-teacher{ color:#fff; background: linear-gradient(90deg,#00a6ff,#00d1b2); }
+.badge-staff  { color:#fff; background: linear-gradient(90deg,#ff8a00,#ff5e62); }
+.badge-manager{ color:#fff; background: linear-gradient(90deg,#7c4dff,#a74dff); }
+
+/* Pill trạng thái */
+.pill{
+  display:inline-block; padding:.25rem .625rem; border-radius:999px;
+  font-size:.75rem; font-weight:600; border:1px solid transparent;
+}
+.pill-on { color:#115e59; background:#ccfbf1; border-color:#99f6e4; }    /* teal */
+.pill-off{ color:#7f1d1d; background:#fee2e2; border-color:#fecaca; }    /* red */
+
+/* Modal “compact” đã có – chỉ tô header/footer bằng brand */
+.compact-modal .modal-header{ padding:.75rem 1rem; background:#fff; border-bottom:1px solid rgba(124,77,255,.15); }
+.compact-modal .modal-footer{ padding:.75rem 1rem; background:var(--ras-bg); border-top:1px solid rgba(124,77,255,.15); }
+
+/* Thanh tool filter */
+.toolbar{
+  background:#fff; border:1px solid rgba(124,77,255,.12);
+  border-radius: 14px; padding: .5rem; gap:.5rem;
+}
+
+/* ========= RAS base ========= */
+:root{
+  --ras-primary:#E51A4C;
+  --ras-dark:#121212;
+  --ras-accent:#FFC107;
+}
+
+html, body, #root {
+  height: 100%;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(229,26,76,.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 20%, rgba(255,193,7,.12), transparent 50%),
+    linear-gradient(180deg, #ffffff 0%, #fbfbfb 100%);
+}
+
+/* ========= RAS components ========= */
+@layer components {
+  .ras-glass {
+    @apply bg-white/40 backdrop-blur-md rounded-2xl shadow-glass border border-white/30;
+  }
+  .ras-chip {
+    @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-ras-primary/10 text-ras-primary;
+  }
+  .ras-btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition
+           bg-ras-primary text-white hover:bg-ras-primary/90 shadow-ras active:scale-[.98];
+  }
+  .ras-outline {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition
+           border border-ras-primary text-ras-primary hover:bg-ras-primary/10;
+  }
+  .ras-card {
+    @apply rounded-2xl bg-white shadow-lg hover:shadow-ras transition;
+  }
+  .ras-kpi {
+    @apply ras-card p-5 relative overflow-hidden;
+  }
+  .ras-tabs {
+    @apply flex gap-2 p-1 bg-white/60 rounded-2xl;
+  }
+  .ras-tab {
+    @apply px-4 py-2 rounded-xl font-semibold text-ras-dark/70 hover:bg-ras-primary/10 transition;
+  }
+  .ras-tab--active {
+    @apply bg-ras-primary text-white shadow-ras;
   }
 }

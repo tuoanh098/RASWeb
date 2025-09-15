@@ -17,7 +17,8 @@ import Dashboard1 from "./pages/Dashboard1.jsx";
 import Courses1 from "./pages/Courses1.jsx";
 // finance
 import Finance1 from "./pages/Finance1.jsx";
-
+//Salary
+import Salary from "./pages/Salary.jsx";
 
 const Courses = () => <div className="card"><div className="card-header"><h2>Thông tin khóa học</h2></div><div className="card-body">Đang cập nhật…</div></div>;
 const Settings = () => <div className="card"><div className="card-header"><h2>Cài đặt</h2></div><div className="card-body">Đang cập nhật…</div></div>;
@@ -47,7 +48,7 @@ export default function App() {
           <Route path="xep-lop" element={<Schedule/>} />
           <Route path="xep-lich-truc" element={<DutyRoster/>} />
         </Route>
-
+        <Route path="/luong" element={<Salary/>} />
         <Route path="/tai-chinh" element={<Finance1/>} />
         <Route path="/cai-dat" element={<Settings/>} />
         <Route path="*" element={<Navigate to="/" replace />} />

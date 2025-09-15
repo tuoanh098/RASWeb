@@ -2,7 +2,6 @@ package com.ras.service.employee.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
@@ -34,9 +33,6 @@ public class EmployeeUpsertReq {
     private String maSoThue;
     private LocalDate ngayVaoLam;
     private Integer soNamKinhNghiem;
-    private BigDecimal luongCoBan;
-    private BigDecimal heSoLuong;
-    private BigDecimal phuCap;
     private String hinhThucLamViec;
     private String ghiChu;
     private String avatarUrl;

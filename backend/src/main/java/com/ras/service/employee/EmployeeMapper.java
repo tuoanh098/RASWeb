@@ -1,84 +1,52 @@
 package com.ras.service.employee;
 
 import com.ras.domain.employee.Employee;
-import com.ras.service.employee.dto.*;
-import org.springframework.stereotype.Component;
+import com.ras.service.employee.dto.EmployeeDetailDto;
+import com.ras.service.employee.dto.EmployeeListDto;
 
-@Component
-public class EmployeeMapper {
+public final class EmployeeMapper {
 
-    public EmployeeListDto toList(Employee e) {
-        return EmployeeListDto.builder()
-            .id(e.getId())
-            .hoTen(e.getHoTen())
-            .soDienThoai(e.getSoDienThoai())
-            .email(e.getEmail())
-            .vaiTro(e.getVaiTro())
-            .chuyenMon(e.getChuyenMon())
-            .chucDanh(e.getChucDanh())
-            .hoatDong(e.getHoatDong())
-            .build();
+    private EmployeeMapper() {}
+
+    public static EmployeeListDto toListDto(Employee e) {
+        if (e == null) return null;
+        EmployeeListDto dto = new EmployeeListDto();
+        dto.setId(e.getId());
+        dto.setHoTen(e.getHoTen());
+        dto.setSoDienThoai(e.getSoDienThoai());
+        dto.setEmail(e.getEmail());
+        // hiển thị “chuyên môn” cho TEACHER, còn NV/QL hiển thị “chức danh”
+        dto.setChucDanh(e.getVaiTro() != null && e.getVaiTro().equalsIgnoreCase("TEACHER")
+                ? e.getChuyenMon()
+                : e.getChucDanh());
+        dto.setVaiTro(e.getVaiTro());
+        dto.setHoatDong(Boolean.TRUE.equals(e.getHoatDong()));
+        return dto;
     }
 
-    public EmployeeDetailDto toDetail(Employee e) {
-        return EmployeeDetailDto.builder()
-            .id(e.getId())
-            .hoTen(e.getHoTen())
-            .soDienThoai(e.getSoDienThoai())
-            .email(e.getEmail())
-            .vaiTro(e.getVaiTro())
-            .chuyenMon(e.getChuyenMon())
-            .chucDanh(e.getChucDanh())
-            .hoatDong(e.getHoatDong())
-            .ngaySinh(e.getNgaySinh())
-            .gioiTinh(e.getGioiTinh())
-            .diaChi(e.getDiaChi())
-            .cccd(e.getCccd())
-            .maSoThue(e.getMaSoThue())
-            .ngayVaoLam(e.getNgayVaoLam())
-            .soNamKinhNghiem(e.getSoNamKinhNghiem())
-            .luongCoBan(e.getLuongCoBan())
-            .heSoLuong(e.getHeSoLuong())
-            .phuCap(e.getPhuCap())
-            .hinhThucLamViec(e.getHinhThucLamViec())
-            .ghiChu(e.getGhiChu())
-            .avatarUrl(e.getAvatarUrl())
-            .ngayTao(e.getNgayTao())
-            .ngaySua(e.getNgaySua())
-            .build();
-    }
-
-    /** Gán dữ liệu từ req vào entity (create/update) */
-    public void apply(EmployeeUpsertReq r, Employee e) {
-        e.setHoTen(r.getHoTen());
-        e.setSoDienThoai(r.getSoDienThoai());
-        e.setEmail(r.getEmail());
-        e.setVaiTro(r.getVaiTro());
-
-        // Đảm bảo đúng semantics theo vai trò
-        if ("TEACHER".equals(r.getVaiTro())) {
-            e.setChuyenMon(r.getChuyenMon());
-            e.setChucDanh(null);
-        } else {
-            e.setChuyenMon(null);
-            e.setChucDanh(r.getChucDanh());
-        }
-
-        if (r.getHoatDong() != null) e.setHoatDong(r.getHoatDong());
-
-        // optional
-        e.setNgaySinh(r.getNgaySinh());
-        e.setGioiTinh(r.getGioiTinh());
-        e.setDiaChi(r.getDiaChi());
-        e.setCccd(r.getCccd());
-        e.setMaSoThue(r.getMaSoThue());
-        e.setNgayVaoLam(r.getNgayVaoLam());
-        e.setSoNamKinhNghiem(r.getSoNamKinhNghiem());
-        e.setLuongCoBan(r.getLuongCoBan());
-        e.setHeSoLuong(r.getHeSoLuong());
-        e.setPhuCap(r.getPhuCap());
-        e.setHinhThucLamViec(r.getHinhThucLamViec());
-        e.setGhiChu(r.getGhiChu());
-        e.setAvatarUrl(r.getAvatarUrl());
+    public static EmployeeDetailDto toDetailDto(Employee e) {
+        if (e == null) return null;
+        EmployeeDetailDto dto = new EmployeeDetailDto();
+        dto.setId(e.getId());
+        dto.setAvatarUrl(e.getAvatarUrl());
+        dto.setCccd(e.getCccd());
+        dto.setChucDanh(e.getChucDanh());
+        dto.setChuyenMon(e.getChuyenMon());
+        dto.setDiaChi(e.getDiaChi());
+        dto.setEmail(e.getEmail());
+        dto.setGhiChu(e.getGhiChu());
+        dto.setGioiTinh(e.getGioiTinh());
+        dto.setHinhThucLamViec(e.getHinhThucLamViec());
+        dto.setHoTen(e.getHoTen());
+        dto.setHoatDong(Boolean.TRUE.equals(e.getHoatDong()));
+        dto.setMaSoThue(e.getMaSoThue());
+        dto.setNgaySinh(e.getNgaySinh());
+        dto.setNgaySua(e.getNgaySua());
+        dto.setNgayTao(e.getNgayTao());
+        dto.setNgayVaoLam(e.getNgayVaoLam());
+        dto.setSoDienThoai(e.getSoDienThoai());
+        dto.setSoNamKinhNghiem(e.getSoNamKinhNghiem());
+        dto.setVaiTro(e.getVaiTro());
+        return dto;
     }
 }

@@ -44,13 +44,9 @@ export default function Layout({ children }) {
 
   const [openTeam, setOpenTeam] = useState(true);
   const [openManage, setOpenManage] = useState(true);
+  const [openFinance, setOpenFinance] = useState(true);
   const location = useLocation();
 
-  const branches = [
-    { id: 1, name: "Cơ sở Quận 1" },
-    { id: 2, name: "Cơ sở Quận 7" },
-    { id: 3, name: "Cơ sở Thủ Đức" },
-  ];
     function logout() {
       localStorage.removeItem("ras_auth");
       sessionStorage.removeItem("ras_auth");
@@ -79,7 +75,7 @@ export default function Layout({ children }) {
 
           <Item to="/" label="Tổng quan" exact />
           <Item to="/khoa-hoc" label="Khóa học" />
-
+          
           {/* ĐỘI NGŨ */}
           <div>
             <button
@@ -114,7 +110,20 @@ export default function Layout({ children }) {
             )}  
           </div>
 
-          <Item to="/tai-chinh" label="Tài chính" />
+          {/* TÀI CHÍNH */}
+          <div>
+            <button
+              className="w-full text-left px-4 py-3 rounded-lg font-medium text-ras-blue hover:bg-ras-purple/10"
+              onClick={() => setOpenFinance(v => !v)}
+            >
+            Tài chính
+            </button>
+            {openFinance && (
+              <div className="mt-1 space-y-1">
+                <SubItem to="/luong" label="Lương" />
+              </div>
+            )}
+          </div>
           <Item to="/cai-dat" label="Cài đặt" />
 
           {/* Đăng xuất (mock) */}
