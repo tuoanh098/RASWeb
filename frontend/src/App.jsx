@@ -14,12 +14,10 @@ import Schedule from "./pages/management/Schedule.jsx";
 // dashboard
 import Dashboard1 from "./pages/Dashboard1.jsx";
 // courses
-import Courses1 from "./pages/Courses1.jsx";
+import Courses from  "./pages/management/Courses.jsx"
 //Salary
 import ESalary from "./pages/finance/EmployeeSalary.jsx";
 
-const Courses = () => <div className="card"><div className="card-header"><h2>Thông tin khóa học</h2></div><div className="card-body">Đang cập nhật…</div></div>;
-const Settings = () => <div className="card"><div className="card-header"><h2>Cài đặt</h2></div><div className="card-body">Đang cập nhật…</div></div>;
 function isAuthed() {
   return !!(localStorage.getItem("ras_auth") || sessionStorage.getItem("ras_auth"));
 }
@@ -33,7 +31,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Dashboard1/>} />
-        <Route path="/khoa-hoc" element={<Courses1/>} />
+        
         <Route path="/doi-ngu" element={<TeamLayout/>}>
           <Route path="hoc-vien" element={<TeamStudents/>} />
           <Route path="nhan-vien" element={<TeamEmployees/>} />
@@ -45,9 +43,9 @@ export default function App() {
           <Route path="diem-danh" element={<Attendance/>} />
           <Route path="xep-lop" element={<Schedule/>} />
           <Route path="xep-lich-truc" element={<DutyRoster/>} />
+          <Route path="khoa-hoc" element={<Courses/>}/>
         </Route>
         <Route path="/luong-nhan-vien" element={<ESalary/>} />
-        <Route path="/cai-dat" element={<Settings/>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

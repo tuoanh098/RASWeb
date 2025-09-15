@@ -74,7 +74,7 @@ export default function Layout({ children }) {
           </div>
 
           <Item to="/" label="Tổng quan" exact />
-          <Item to="/khoa-hoc" label="Khóa học" />
+          
           
           {/* ĐỘI NGŨ */}
           <div>
@@ -106,6 +106,7 @@ export default function Layout({ children }) {
                 <SubItem to="/quan-ly/diem-danh" label="Điểm danh" />
                 <SubItem to="/quan-ly/xep-lop" label="Xếp lớp" />
                 <SubItem to="/quan-ly/xep-lich-truc" label="Xếp lịch trực" />
+                <SubItem to="/quan-ly/khoa-hoc" label="Khóa học" />
               </div>
             )}  
           </div>
@@ -124,7 +125,6 @@ export default function Layout({ children }) {
               </div>
             )}
           </div>
-          <Item to="/cai-dat" label="Cài đặt" />
 
           {/* Đăng xuất (mock) */}
         <button onClick={logout} className="px-3 py-2 rounded border">Đăng xuất</button>
