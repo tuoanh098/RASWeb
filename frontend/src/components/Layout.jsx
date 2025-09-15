@@ -106,7 +106,7 @@ export default function Layout({ children }) {
                 <SubItem to="/quan-ly/diem-danh" label="Điểm danh" />
                 <SubItem to="/quan-ly/xep-lop" label="Xếp lớp" />
                 <SubItem to="/quan-ly/xep-lich-truc" label="Xếp lịch trực" />
-                <SubItem to="/quan-ly/khoa-hoc" label="Khóa học" />
+                <SubItem to="/quan-ly/khoa-hoc" label="Xem khóa học" />
               </div>
             )}  
           </div>
