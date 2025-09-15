@@ -1,17 +1,20 @@
 package com.ras.domain.salary;
 
-import jakarta.persistence.*;
 import lombok.*;
-
+import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "nv_bang_luong_thang",
-       uniqueConstraints = @UniqueConstraint(name = "uk_nvbl_ky_nv", columnNames = {"ky_luong_id","nhan_vien_id"}))
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+       indexes = {
+           @Index(name = "idx_nvbl_ky_nv", columnList = "ky_luong_id, nhan_vien_id")
+       },
+       uniqueConstraints = {
+           @UniqueConstraint(name = "uk_nvbl_ky_nv", columnNames = {"ky_luong_id","nhan_vien_id"})
+       })
+@Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class NvBangLuongThang {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,30 +25,30 @@ public class NvBangLuongThang {
     @Column(name = "nhan_vien_id", nullable = false)
     private Long nhanVienId;
 
-    @Column(name = "luong_cung")
+    @Column(name = "luong_cung", precision = 38, scale = 2)
     private BigDecimal luongCung;
 
-    @Column(name = "tong_hoa_hong")
+    @Column(name = "tong_hoa_hong", precision = 38, scale = 2)
     private BigDecimal tongHoaHong;
 
-    @Column(name = "tong_thuong")
+    @Column(name = "tong_thuong", precision = 38, scale = 2)
     private BigDecimal tongThuong;
 
-    @Column(name = "tong_truc")
+    @Column(name = "tong_truc", precision = 38, scale = 2)
     private BigDecimal tongTruc;
 
-    @Column(name = "tong_phu_cap_khac")
+    @Column(name = "tong_phu_cap_khac", precision = 38, scale = 2)
     private BigDecimal tongPhuCapKhac;
 
-    @Column(name = "tong_phat")
+    @Column(name = "tong_phat", precision = 38, scale = 2)
     private BigDecimal tongPhat;
 
-    @Column(name = "tong_luong")
+    @Column(name = "tong_luong", precision = 38, scale = 2)
     private BigDecimal tongLuong;
 
-    @Column(name = "ghi_chu")
+    @Column(name = "ghi_chu", length = 255)
     private String ghiChu;
 
-    @Column(name = "tao_luc")
-    private LocalDateTime taoLuc;
+    @Column(name = "tao_luc", nullable = false, updatable = false, insertable = false)
+    private Instant taoLuc;
 }

@@ -120,7 +120,7 @@ export default function Layout({ children }) {
             </button>
             {openFinance && (
               <div className="mt-1 space-y-1">
-                <SubItem to="/luong" label="Lương" />
+                <SubItem to="/luong" label="Lương quản lý" />
               </div>
             )}
           </div>
