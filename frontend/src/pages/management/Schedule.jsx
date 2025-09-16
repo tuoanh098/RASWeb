@@ -431,7 +431,7 @@ export default function Schedule(){
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl md:text-3xl font-bold text-ras-blue">Xếp lớp</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-ras-blue">Xếp lớp (tuần)</h1>
         <div className="flex gap-2">
           <button className="px-3 py-2 rounded-xl border" onClick={()=>setWeek0(addDays(week0,-7))}>← Tuần trước</button>
           <div className="px-3 py-2 font-semibold text-ras-blue hidden md:block">Tuần bắt đầu {week0.toLocaleDateString("vi-VN")}</div>

@@ -119,7 +119,6 @@ export default function Layout({ children }) {
             </button>
             {openManage && (
               <div className="mt-1 space-y-1">
-                <SubItem to="/quan-ly/diem-danh" label="Điểm danh" />
                 <SubItem to="/quan-ly/xep-lop" label="Xếp lớp" />
                 <SubItem to="/quan-ly/xep-lich-truc" label="Xếp lịch trực" />
               </div>

@@ -1,9 +1,11 @@
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\web\api\salary\DeductionController.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\duty\dto\NvLichTrucDto.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\pricing\PricingService.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\course\dto\CourseDTO.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\schedule\dto\XepLopCreateDto.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\schedule\XepLopHocRepository.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\web\api\salary\ShiftController.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\duty\dto\NvLichTrucUpdateDto.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\schedule\XepLopServiceImpl.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\employee\EmployeeCommandServiceImpl.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\exception\GlobalExceptionHandler.java
@@ -17,6 +19,7 @@ C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\commiss
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\web\api\enroll\EnrollmentController.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvThuongBacRepository.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\employee\EmployeeCommandService.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\duty\NvLichTrucService.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvBangLuongThangRepository.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\course\dto\AssignClassDTO.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\student\StudentCommandService.java
@@ -32,6 +35,8 @@ C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\N
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvTrucRepository.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\student\StudentMapper.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\student\HocVien.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\web\api\duty\NvLichTrucController.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\duty\NvLichTrucServiceImpl.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\course\BangGiaHocPhi.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvBangLuongThang.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\enroll\EnrollmentRepository.java
@@ -49,6 +54,7 @@ C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\employe
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvPhuCapKhac.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\branch\ChiNhanhRepository.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\course\KhoaHocRepository.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\duty\NvLichTrucRepository.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvHoaHongChotLop.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\course\KhoaHoc.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\schedule\XepLopHoc.java
@@ -83,6 +89,7 @@ C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\web\api\pricing
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\RasApplication.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\salary\SalaryService.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\student\StudentCommandServiceImpl.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\duty\NvLichTruc.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\enroll\EnrollmentServiceImpl.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\schedule\dto\XepLopDto.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\course\LoaiLop.java
@@ -92,6 +99,7 @@ C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\web\api\branch\
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvThuongKhacRepository.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\student\StudentQueryServiceImpl.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\web\api\account\AccountController.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\duty\NvLichTrucMapper.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\course\CourseServiceImpl.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\employee\EmployeeQueryService.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\commission\CommissionAwardInput.java
@@ -108,6 +116,7 @@ C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\N
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\enroll\EnrollmentRow.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\student\dto\StudentDetailDto.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\account\dto\AccountDetailDto.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\duty\dto\NvLichTrucCreateDto.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\schedule\XepLopService.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvHoaHongChotLopRepository.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvPhuCapKhacRepository.java

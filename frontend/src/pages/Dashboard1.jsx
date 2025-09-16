@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
  * Dashboard1 (mock)
  * - Trực hôm nay: liệt kê giáo vụ trực theo ca tại các chi nhánh
  * - Lịch dạy hôm nay: bảng các buổi học với giờ, môn/lớp, GV, chi nhánh, sĩ số
+ * 
  *
  * Không dùng API / thư viện ngoài. Có thể thả vào src/pages/Dashboard1.jsx
  * và trỏ route "/dashboard1" tới component này.
