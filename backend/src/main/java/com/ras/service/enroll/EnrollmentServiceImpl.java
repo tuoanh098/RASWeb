@@ -46,19 +46,6 @@ public class EnrollmentServiceImpl implements EnrollmentService {
       // Lưu & flush để có ID
       enrollmentRepo.saveAndFlush(e);
 
-      // Chấm hoa hồng ở transaction riêng (REQUIRES_NEW trong service kia)
-      commissionAwardService.awardFromSignup(
-          CommissionAwardInput.builder()
-              .dangKyId(e.getId())
-              .ngayDangKy(req.getNgayDangKy())
-              .hocVienId(req.getHocVienId())
-              .chiNhanhId(req.getChiNhanhId())
-              .nhanVienTuVanId(req.getNhanVienTuVanId())
-              .khoaHocMauId(req.getKhoaHocMauId())
-              .hocPhiApDung(e.getHocPhiApDung())
-              .build()
-      );
-
       return toDto(e);
       } catch (org.springframework.dao.DataIntegrityViolationException ex) {
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
