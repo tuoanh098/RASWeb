@@ -8,10 +8,14 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "nv_luong_cung",
-       uniqueConstraints = {
-           @UniqueConstraint(name = "uk_nv_luong", columnNames = {"nhan_vien_id","hieu_luc_tu"})
-       })
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+uniqueConstraints = {
+    @UniqueConstraint(name = "uk_nv_luong", columnNames = {"nhan_vien_id","hieu_luc_tu"})
+})
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class NvLuongCung {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

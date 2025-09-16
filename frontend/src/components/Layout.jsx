@@ -45,6 +45,7 @@ export default function Layout({ children }) {
   const [openTeam, setOpenTeam] = useState(true);
   const [openManage, setOpenManage] = useState(true);
   const [openFinance, setOpenFinance] = useState(true);
+  const [openCourses, setOpenCourses] = useState(true);
   const location = useLocation();
 
     function logout() {
@@ -75,6 +76,21 @@ export default function Layout({ children }) {
 
           <Item to="/" label="Tổng quan" exact />
           
+          {/* KHÓA HỌC */}
+          <div>
+            <button
+              className="w-full text-left px-4 py-3 rounded-lg font-medium text-ras-blue hover:bg-ras-purple/10"
+              onClick={() => setOpenCourses(v => !v)}
+            >
+            Khóa học
+            </button>
+            {openCourses && (
+              <div className="mt-1 space-y-1">
+                <SubItem to="khoa-hoc/xem-khoa-hoc" label="Xem khóa học" />
+                <SubItem to="khoa-hoc/dang-ki-khoa-hoc" label="Đăng kí khóa học" />
+              </div>
+            )}
+          </div>
           
           {/* ĐỘI NGŨ */}
           <div>

@@ -10,8 +10,12 @@ import java.time.Instant;
        indexes = {
            @Index(name = "idx_hh_ky_nv", columnList = "ky_luong_id, nhan_vien_id")
        })
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class NvHoaHongChotLop {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -46,6 +50,6 @@ public class NvHoaHongChotLop {
     @Column(name = "ghi_chu", length = 300)
     private String ghiChu;
 
-    @Column(name = "tao_luc", nullable = false, updatable = false, insertable = false)
+    @Column(name = "tao_luc", nullable = false, updatable = false)
     private Instant taoLuc;
 }

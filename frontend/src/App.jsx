@@ -14,7 +14,9 @@ import Schedule from "./pages/management/Schedule.jsx";
 // dashboard
 import Dashboard1 from "./pages/Dashboard1.jsx";
 // courses
-import Courses from  "./pages/management/Courses.jsx"
+import CoursesLayout from "./pages/courses/CoursesLayout.jsx"
+import Courses from  "./pages/courses/Courses.jsx"
+import Signup from "./pages/courses/Signup.jsx"
 //Salary
 import ESalary from "./pages/finance/EmployeeSalary.jsx";
 
@@ -31,7 +33,12 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Dashboard1/>} />
-        
+
+        <Route path="/khoa-hoc" element={<CoursesLayout/>}>
+          <Route path="xem-khoa-hoc" element={<Courses/>}/>
+          <Route path="dang-ki-khoa-hoc" element={<Signup/>}/>
+        </Route>
+    
         <Route path="/doi-ngu" element={<TeamLayout/>}>
           <Route path="hoc-vien" element={<TeamStudents/>} />
           <Route path="nhan-vien" element={<TeamEmployees/>} />
@@ -43,7 +50,6 @@ export default function App() {
           <Route path="diem-danh" element={<Attendance/>} />
           <Route path="xep-lop" element={<Schedule/>} />
           <Route path="xep-lich-truc" element={<DutyRoster/>} />
-          <Route path="khoa-hoc" element={<Courses/>}/>
         </Route>
         <Route path="/luong-nhan-vien" element={<ESalary/>} />
         <Route path="*" element={<Navigate to="/" replace />} />
