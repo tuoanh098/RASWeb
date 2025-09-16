@@ -40,7 +40,7 @@ public final class SalaryMappers {
         d.setTy_le_pct(e.getTyLePct());
         d.setSo_tien(e.getSoTien());
         d.setGhi_chu(e.getGhiChu());
-        d.setTao_luc(e.getTaoLuc());
+        d.getTaoLuc(e.getTaoLuc());
         return d;
     }
 

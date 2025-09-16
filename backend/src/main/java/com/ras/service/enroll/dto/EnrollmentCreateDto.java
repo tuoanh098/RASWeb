@@ -16,4 +16,5 @@ public class EnrollmentCreateDto {
   @JsonProperty("hoc_phi_ap_dung")    private BigDecimal hocPhiApDung;
   @JsonProperty("ngay_dang_ky")       private LocalDate ngayDangKy;
   @JsonProperty("ghi_chu")            private String ghiChu;
+  
 }

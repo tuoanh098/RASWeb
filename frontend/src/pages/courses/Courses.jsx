@@ -10,9 +10,8 @@ const RAS = {
 
 const LoaiLopOptions = [
   { value: "ca_nhan", label: "Cá nhân" },
-  { value: "nhom2", label: "Nhóm 2" },
-  { value: "nhom3_4", label: "Nhóm 3-4" },
-  { value: "nhom5_8", label: "Nhóm 5-8" },
+  { value: "nhom2",   label: "Nhóm 2" },
+  { value: "nhom",    label: "Nhóm 3–8" },
 ];
 
 const Section = ({ title, right, children }) => (

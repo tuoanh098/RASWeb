@@ -2,8 +2,10 @@ package com.ras.service.salary.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 public class HoaHongDTO {
 
@@ -79,5 +81,9 @@ public class HoaHongDTO {
 
     public Instant getTao_luc() { return tao_luc; }
     public void setTao_luc(Instant tao_luc) { this.tao_luc = tao_luc; }
-}
+    public void getTaoLuc(LocalDateTime taoLuc) {
+      if (taoLuc == null) taoLuc = LocalDateTime.now();
+    }
+    }
+
 

@@ -70,4 +70,8 @@ public class Enrollment {
 
     public LocalDateTime getTaoLuc() { return taoLuc; }
     public void setTaoLuc(LocalDateTime taoLuc) { this.taoLuc = taoLuc; }
+    @PrePersist
+        public void prePersist() {
+        if (taoLuc == null) taoLuc = LocalDateTime.now();
+    }
 }

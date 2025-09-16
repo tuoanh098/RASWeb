@@ -39,9 +39,10 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     e.setChiNhanhId(req.getChiNhanhId());
     e.setHocPhiApDung(safeMoney(req.getHocPhiApDung()));
     e.setNgayDangKy(req.getNgayDangKy());
+    e.setTaoLuc(java.time.LocalDateTime.now());
     e.setGhiChu(req.getGhiChu());
 
-    try {
+    try { 
       // Lưu & flush để có ID
       enrollmentRepo.saveAndFlush(e);
 
@@ -59,11 +60,16 @@ public class EnrollmentServiceImpl implements EnrollmentService {
       );
 
       return toDto(e);
-    } catch (ResponseStatusException rse) {
-      throw rse;
-    } catch (Exception ex) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tạo đăng ký thất bại: " + rootMsg(ex), ex);
-    }
+      } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+            "Dữ liệu không hợp lệ: " + rootMsg(ex), ex);
+      } catch (jakarta.persistence.PersistenceException ex) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+            "Lỗi CSDL: " + rootMsg(ex), ex);
+      } catch (Exception ex) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+            "Tạo đăng ký thất bại: " + rootMsg(ex), ex);
+      }
   }
 
   @Override
@@ -107,7 +113,11 @@ public class EnrollmentServiceImpl implements EnrollmentService {
   private static String rootMsg(Throwable t) {
     Throwable c = t;
     while (c.getCause() != null) c = c.getCause();
-    return c.getMessage();
+    String m = String.valueOf(c.getMessage());
+    // vài thông điệp phổ biến để bạn dễ đọc:
+    if (m.contains("tao_luc")) return "cột 'tao_luc' đang NULL hoặc thiếu DEFAULT";
+    if (m.contains("foreign key")) return "Sai khoá ngoại (ID không tồn tại)";
+    return m;
   }
 
   private static void validateCreate(EnrollmentCreateDto req) {

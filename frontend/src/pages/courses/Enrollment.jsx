@@ -1,13 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 
-/**
- * RAS Enrollment Page (Complete, fixed JSX)
- * Endpoints dự kiến:
- *   POST /api/signups
- *   GET  /api/signups?studentId=...
- *   GET  /api/signups/summary?month=YYYY-MM
- * Các fetcher dropdown cố gắng thử nhiều đường dẫn phổ biến.
- */
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
@@ -490,7 +482,7 @@ export default function EnrollmentPage() {
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl md:text-3xl font-bold">Đăng ký khóa học</h1>
-        <span className="text-sm text-gray-500">RAS Enrollment</span>
+        <span className="text-sm text-gray-500">Quản lý đăng ký khóa học</span>
       </div>
 
       {(error || notice) && (
@@ -611,8 +603,7 @@ export default function EnrollmentPage() {
           </div>
 
           <div className="md:col-span-1 text-xs text-gray-500">
-            Lưu ý: Hệ thống tự cộng hoa hồng <b>2%</b> cho NV tư vấn và cập nhật lương tháng tương
-            ứng.
+            Lưu ý: Hệ thống tự cộng hoa hồng <b>2%</b> cho NV tư vấn
           </div>
         </div>
       </Section>

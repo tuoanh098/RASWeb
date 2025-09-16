@@ -2,7 +2,7 @@ package com.ras.domain.salary;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "nv_hoa_hong_chot_lop")
@@ -45,8 +45,8 @@ public class NvHoaHongChotLop {
   @Column(name = "ghi_chu")
   private String ghiChu;
 
-  @Column(name = "tao_luc")
-  private Instant taoLuc;
+  @Column(name = "tao_luc", nullable = false)
+  private LocalDateTime taoLuc;
 
   // ===== getter/setter =====
   public Long getId() { return id; }
@@ -82,6 +82,9 @@ public class NvHoaHongChotLop {
   public String getGhiChu() { return ghiChu; }
   public void setGhiChu(String ghiChu) { this.ghiChu = ghiChu; }
 
-  public Instant getTaoLuc() { return taoLuc; }
-  public void setTaoLuc(Instant taoLuc) { this.taoLuc = taoLuc; }
+  public LocalDateTime getTaoLuc() { return taoLuc; }
+  @PrePersist
+    public void prePersist() {
+      if (taoLuc == null) taoLuc = LocalDateTime.now();
+    }
 }
