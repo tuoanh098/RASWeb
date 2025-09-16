@@ -26,31 +26,31 @@ public class XepLopHoc {
   @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name="khoa_hoc_id", nullable=false)  private Long khoaHocId;
-  @Column(name="khoa_hoc_ten", nullable=false) private String khoaHocTen;
+  @Column(name="khoa_hoc_id", nullable=true)  private Long khoaHocId;
+  @Column(name="khoa_hoc_ten", nullable=true) private String khoaHocTen;
 
-  @Column(name="hoc_vien_id", nullable=false)  private Long hocVienId;
-  @Column(name="giao_vien_id", nullable=false) private Long giaoVienId;
-  @Column(name="hoc_vien_ten", nullable=false) private String hocVienTen;
-  @Column(name="giao_vien_ten", nullable=false) private String giaoVienTen;
+  @Column(name="hoc_vien_id", nullable=true)  private Long hocVienId;
+  @Column(name="giao_vien_id", nullable=true) private Long giaoVienId;
+  @Column(name="hoc_vien_ten", nullable=true) private String hocVienTen;
+  @Column(name="giao_vien_ten", nullable=true) private String giaoVienTen;
 
-  @Column(name="chi_nhanh_ten", nullable=false) private String chiNhanhTen;
-  @Column(name="chi_nhanh_id",  nullable=false) private Long chiNhanhId;
+  @Column(name="chi_nhanh_ten", nullable=true) private String chiNhanhTen;
+  @Column(name="chi_nhanh_id",  nullable=true) private Long chiNhanhId;
 
-  @Column(name="so_buoi_du_kien", nullable=false) private Integer soBuoiDuKien;
-  @Column(name="so_buoi_da_hoc",  nullable=false) private Integer soBuoiDaHoc = 0;
+  @Column(name="so_buoi_du_kien", nullable=true) private Integer soBuoiDuKien;
+  @Column(name="so_buoi_da_hoc",  nullable=true) private Integer soBuoiDaHoc = 0;
 
-  @Column(name="ngay", nullable=false)          private LocalDate ngay;
-  @Column(name="bat_dau_luc", nullable=false)  private LocalTime batDauLuc;
-  @Column(name="ket_thuc_luc", nullable=false) private LocalTime ketThucLuc;
+  @Column(name="ngay", nullable=true)          private LocalDate ngay;
+  @Column(name="bat_dau_luc", nullable=true)  private LocalTime batDauLuc;
+  @Column(name="ket_thuc_luc", nullable=true) private LocalTime ketThucLuc;
 
-  @Column(name="thoi_luong_phut", nullable=false)
+  @Column(name="thoi_luong_phut", nullable=true)
   private Integer thoiLuongPhut;
 
   @Column(name="co_dinh_group_id") private Long coDinhGroupId;
 
   @Enumerated(EnumType.STRING)
-  @Column(name="trang_thai_buoi", nullable=false)
+  @Column(name="trang_thai_buoi", nullable=true)
   private TrangThaiBuoi trangThaiBuoi = TrangThaiBuoi.scheduled;
 
   @Column(name="ghi_chu") private String ghiChu;
