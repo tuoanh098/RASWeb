@@ -21,4 +21,5 @@ public class EnrollmentDto {
   @JsonProperty("hoa_hong_2pct")      private BigDecimal hoaHong2pct;
   @JsonProperty("ngay_dang_ky")       private LocalDate ngayDangKy;
   @JsonProperty("ghi_chu")            private String ghiChu;
+  @JsonProperty("ten_hien_thi")       private String tenHienThi;
 }

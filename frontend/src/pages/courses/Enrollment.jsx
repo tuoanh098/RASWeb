@@ -497,6 +497,66 @@ export default function EnrollmentPage() {
         </div>
       )}
 
+            {/* List by student */}
+      <Section
+        title="Tìm khóa học học viên"
+        right={
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              value={listStudentId}
+              onChange={(e) => setListStudentId(e.target.value)}
+              placeholder="Học viên ID"
+              className="w-40 border rounded-xl px-3 py-2"
+            />
+            <button
+              onClick={() => loadListByStudent(listStudentId)}
+              className="px-3 py-2 rounded-xl bg-slate-700 text-white hover:bg-slate-800"
+            >
+              Tải danh sách
+            </button>
+          </div>
+        }
+      >
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="text-left bg-slate-50">
+                <th className="px-3 py-2">ID</th>
+                <th className="px-3 py-2">Ngày</th>
+                <th className="px-3 py-2">Học viên</th>
+                <th className="px-3 py-2">Khóa học</th>
+                <th className="px-3 py-2">Học phí</th>
+                <th className="px-3 py-2">Giáo viên</th>
+                <th className="px-3 py-2">NV tư vấn</th>
+                <th className="px-3 py-2">Hh</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-3 py-6 text-center text-gray-500">
+                    Chưa có dữ liệu.
+                  </td>
+                </tr>
+              ) : (
+                items.map((r) => (
+                  <tr key={r.id} className="border-t">
+                    <td className="px-3 py-2">#{r.id}</td>
+                    <td className="px-3 py-2">{r.ngay_dang_ky}</td>
+                    <td className="px-3 py-2">{r.hoc_vien_id}</td>
+                    <td className="px-3 py-2">{r.khoa_hoc_mau_id}</td>
+                    <td className="px-3 py-2">{fmtVnd(r.hoc_phi_ap_dung)} đ</td>
+                    <td className="px-3 py-2">{r.giao_vien_id ?? "-"}</td>
+                    <td className="px-3 py-2">{r.nhan_vien_tu_van_id ?? "-"}</td>
+                    <td className="px-3 py-2 font-medium">{fmtVnd(r.hoa_hong_2pct)} đ</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Section>
       {/* Create form */}
       <Section
         title="Tạo đăng ký mới"
@@ -607,70 +667,7 @@ export default function EnrollmentPage() {
           </div>
         </div>
       </Section>
-
-      {/* List by student */}
-      <Section
-        title="Các khóa học học viên đã đăng ký"
-        right={
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              value={listStudentId}
-              onChange={(e) => setListStudentId(e.target.value)}
-              placeholder="Học viên ID"
-              className="w-40 border rounded-xl px-3 py-2"
-            />
-            <button
-              onClick={() => loadListByStudent(listStudentId)}
-              className="px-3 py-2 rounded-xl bg-slate-700 text-white hover:bg-slate-800"
-            >
-              Tải danh sách
-            </button>
-          </div>
-        }
-      >
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left bg-slate-50">
-                <th className="px-3 py-2">ID</th>
-                <th className="px-3 py-2">Ngày</th>
-                <th className="px-3 py-2">Học viên</th>
-                <th className="px-3 py-2">Khóa học</th>
-                <th className="px-3 py-2">Học phí</th>
-                <th className="px-3 py-2">Giáo viên</th>
-                <th className="px-3 py-2">NV tư vấn</th>
-                <th className="px-3 py-2">Hh</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-gray-500">
-                    Chưa có dữ liệu.
-                  </td>
-                </tr>
-              ) : (
-                items.map((r) => (
-                  <tr key={r.id} className="border-t">
-                    <td className="px-3 py-2">#{r.id}</td>
-                    <td className="px-3 py-2">{r.ngay_dang_ky}</td>
-                    <td className="px-3 py-2">{r.hoc_vien_id}</td>
-                    <td className="px-3 py-2">{r.khoa_hoc_mau_id}</td>
-                    <td className="px-3 py-2">{fmtVnd(r.hoc_phi_ap_dung)} đ</td>
-                    <td className="px-3 py-2">{r.giao_vien_id ?? "-"}</td>
-                    <td className="px-3 py-2">{r.nhan_vien_tu_van_id ?? "-"}</td>
-                    <td className="px-3 py-2 font-medium">{fmtVnd(r.hoa_hong_2pct)} đ</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Section>
-
-      {/* Monthly summary */}
-      <Section
+          <Section
         title="Tổng đăng ký theo tháng"
         right={
           <div className="flex items-center gap-2">
@@ -707,6 +704,9 @@ export default function EnrollmentPage() {
           </div>
         </div>
       </Section>
+
+
+
     </div>
   );
 }

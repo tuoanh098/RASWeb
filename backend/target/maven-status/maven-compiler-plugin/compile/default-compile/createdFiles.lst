@@ -48,7 +48,6 @@ com\ras\web\api\enroll\EnrollmentController.class
 com\ras\service\course\CourseServiceImpl.class
 com\ras\exception\GlobalExceptionHandler.class
 com\ras\service\course\dto\AssignClassDTO.class
-com\ras\service\enroll\EnrollmentServiceImpl.class
 com\ras\domain\salary\NvKyLuongRepository.class
 com\ras\service\student\StudentMapper.class
 com\ras\domain\student\HocVienRepository.class
