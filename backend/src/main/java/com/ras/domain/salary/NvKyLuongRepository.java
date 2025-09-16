@@ -3,13 +3,19 @@ package com.ras.domain.salary;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public interface NvKyLuongRepository extends JpaRepository<NvKyLuong, Long> {
 
     Optional<NvKyLuong> findByNamThang(String namThang);
-
-    // Projection cho JSON trả về có key "nam_thang" đúng như UI đang dùng
+    @Query(value = "select id from ky_luong where nam_thang = :ym limit 1", nativeQuery = true)
+    Long findIdByNamThang(@Param("ym") String yearMonth);
+    default String toYearMonth(LocalDateTime createdAt, ZoneId zone) {
+        return createdAt.atZone(zone).format(DateTimeFormatter.ofPattern("yyyy-MM"));
+    }
     public interface PeriodView {
         Long getId();
         String getNam_thang(); // giữ đúng tên để JSON là "nam_thang"

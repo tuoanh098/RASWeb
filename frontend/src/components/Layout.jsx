@@ -98,7 +98,7 @@ export default function Layout({ children }) {
               className="w-full text-left px-4 py-3 rounded-lg font-medium text-ras-blue hover:bg-ras-purple/10"
               onClick={() => setOpenTeam(v => !v)}
             >
-              Đội ngũ
+            Thông tin
             </button>
             {openTeam && (
               <div className="mt-1 space-y-1">
@@ -122,7 +122,6 @@ export default function Layout({ children }) {
                 <SubItem to="/quan-ly/diem-danh" label="Điểm danh" />
                 <SubItem to="/quan-ly/xep-lop" label="Xếp lớp" />
                 <SubItem to="/quan-ly/xep-lich-truc" label="Xếp lịch trực" />
-                <SubItem to="/quan-ly/khoa-hoc" label="Xem khóa học" />
               </div>
             )}  
           </div>
@@ -137,7 +136,7 @@ export default function Layout({ children }) {
             </button>
             {openFinance && (
               <div className="mt-1 space-y-1">
-                <SubItem to="/luong-nhan-vien" label="Lương nhân viên" />
+                <SubItem to="/luong-nhan-vien" label="Tính lương nhân viên" />
               </div>
             )}
           </div>

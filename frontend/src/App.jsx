@@ -16,7 +16,7 @@ import Dashboard1 from "./pages/Dashboard1.jsx";
 // courses
 import CoursesLayout from "./pages/courses/CoursesLayout.jsx"
 import Courses from  "./pages/courses/Courses.jsx"
-import Signup from "./pages/courses/Signup.jsx"
+import Enrollment from "./pages/courses/Enrollment.jsx"
 //Salary
 import ESalary from "./pages/finance/EmployeeSalary.jsx";
 
@@ -36,7 +36,7 @@ export default function App() {
 
         <Route path="/khoa-hoc" element={<CoursesLayout/>}>
           <Route path="xem-khoa-hoc" element={<Courses/>}/>
-          <Route path="dang-ki-khoa-hoc" element={<Signup/>}/>
+          <Route path="dang-ki-khoa-hoc" element={<Enrollment/>}/>
         </Route>
     
         <Route path="/doi-ngu" element={<TeamLayout/>}>
