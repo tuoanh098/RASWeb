@@ -590,7 +590,7 @@ export default function EmployeeSalary() {
       {/* Header brand */}
       <div className="rounded-2xl px-4 py-3 flex items-center justify-between shadow-sm" style={{ background: RAS.softBg }}>
         <h2 className="font-semibold" style={{ color: RAS.primary }}>
-          Bảng lương giáo viên
+          Bảng lương nhân viên
         </h2>
         <div className="text-sm opacity-80">RAS Finance · tra cứu & chỉnh sửa</div>
       </div>

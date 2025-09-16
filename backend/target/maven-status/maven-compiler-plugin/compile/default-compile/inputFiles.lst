@@ -1,7 +1,10 @@
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\web\api\salary\DeductionController.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\pricing\PricingService.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\course\dto\CourseDTO.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\schedule\dto\XepLopCreateDto.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\schedule\XepLopHocRepository.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\web\api\salary\ShiftController.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\schedule\XepLopServiceImpl.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\employee\EmployeeCommandServiceImpl.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\exception\GlobalExceptionHandler.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\employee\dto\EmployeeListDto.java
@@ -48,6 +51,7 @@ C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\branch\C
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\course\KhoaHocRepository.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvHoaHongChotLop.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\course\KhoaHoc.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\schedule\XepLopHoc.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\account\AccountMapper.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\salary\SalaryServiceImpl.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\web\api\salary\PayrollPeriodsController.java
@@ -56,6 +60,7 @@ C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\course\
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\salary\dto\SalaryRowDTO.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\account\dto\AccountUpsertReq.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\employee\EmployeeRepository.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\schedule\XepLopMapper.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\enroll\dto\EnrollmentDto.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\enroll\dto\MonthlySignUpStatDTO.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\branch\BranchDto.java
@@ -79,6 +84,7 @@ C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\RasApplication.
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\salary\SalaryService.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\student\StudentCommandServiceImpl.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\enroll\EnrollmentServiceImpl.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\schedule\dto\XepLopDto.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\course\LoaiLop.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\web\api\salary\AllowanceController.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvPhatKyLuat.java
@@ -90,9 +96,11 @@ C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\course\
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\employee\EmployeeQueryService.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\commission\CommissionAwardInput.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\student\HocVienRepository.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\web\api\schedule\XepLopController.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\enroll\EnrollmentService.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\employee\Employee.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\config\WebConfig.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\schedule\dto\XepLopRecurringDto.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\course\TrangThaiBangGia.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\account\AccountCommandService.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\course\KhoaHocMau.java
@@ -100,6 +108,7 @@ C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\N
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\enroll\EnrollmentRow.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\student\dto\StudentDetailDto.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\account\dto\AccountDetailDto.java
+C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\service\schedule\XepLopService.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvHoaHongChotLopRepository.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\salary\NvPhuCapKhacRepository.java
 C:\Users\tuoan\source\repos\RASWeb\backend\src\main\java\com\ras\domain\course\KhoaHocMauRepository.java

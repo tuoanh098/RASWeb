@@ -2,8 +2,6 @@ package com.ras.service.enroll;
 
 import com.ras.domain.enroll.Enrollment;
 import com.ras.domain.enroll.EnrollmentRepository;
-import com.ras.service.commission.CommissionAwardInput;
-import com.ras.service.commission.CommissionAwardService;
 import com.ras.service.enroll.dto.EnrollmentCreateDto;
 import com.ras.service.enroll.dto.EnrollmentDto;
 import com.ras.service.enroll.dto.MonthlySignUpStatDTO;
@@ -23,7 +21,6 @@ import java.util.List;
 public class EnrollmentServiceImpl implements EnrollmentService {
 
   private final EnrollmentRepository enrollmentRepo;
-  private final CommissionAwardService commissionAwardService;
 
   @Override
   @Transactional
