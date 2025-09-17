@@ -1,147 +1,146 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-
-/**
- * Login.jsx — RAS professional login page
- * - Tông màu chủ đạo RAS (violet)
- * - Nhập email/username + mật khẩu
- * - Nhấn Enter => submit ngay, điều hướng vào trang chính
- * - Lưu phiên đăng nhập (localStorage nếu tick "Ghi nhớ", ngược lại sessionStorage)
- * - Không gọi API (demo). Có thể thay handleSubmit để gọi backend thật.
- */
+import heroBg from "../assets/RAS MOCKUP.jpg";
+import rasLogo from "../assets/RASlogo.png";
 
 const THEME = {
-  primary: "#6d28d9", // violet-700
-  primaryDark: "#5b21b6", // violet-800
-  accent: "#0ea5e9", // sky-500
+  primary: "#6d28d9",   // tím RAS
+  primaryDark: "#5b21b6",
+  accent: "#0ea5e9",    // xanh sky
+  yellow: "#fbbf24",    // vàng nhấn
 };
 
-function LogoRAS({ className = "h-8 w-auto" }) {
-  return (
-    <div className="flex items-center gap-2 select-none">
-      <svg className={className} viewBox="0 0 64 64" aria-hidden>
-        <defs>
-          <linearGradient id="g" x1="0" x2="1">
-            <stop offset="0%" stopColor="#a78bfa" />
-            <stop offset="100%" stopColor="#6d28d9" />
-          </linearGradient>
-        </defs>
-        <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g)" />
-        <circle cx="22" cy="26" r="6" fill="white"/>
-        <path d="M32 20v24" stroke="white" strokeWidth="3" strokeLinecap="round"/>
-        <path d="M32 44c6-6 14-6 20 0" stroke="white" strokeWidth="3" fill="none" strokeLinecap="round"/>
-      </svg>
-      <span className="text-xl font-extrabold tracking-tight" style={{color: THEME.primary}}>RAS</span>
-    </div>
-  );
-}
-
 export default function Login() {
-  const navigate = useNavigate();
-  const location = useLocation();
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Nếu đã đăng nhập, chuyển vào trang chính luôn
-  useEffect(() => {
-    const ok = !!(localStorage.getItem("ras_auth") || sessionStorage.getItem("ras_auth"));
-    if (ok) navigate("/", { replace: true });
-  }, [navigate]);
-
-  function handleSubmit(e) {
+  const onSubmit = (e) => {
     e.preventDefault();
     setError("");
-    // Validate đơn giản
-    if (!user || user.length < 2) return setError("Vui lòng nhập email/tên đăng nhập hợp lệ.");
-    if (!pass || pass.length < 4) return setError("Mật khẩu tối thiểu 4 ký tự.");
 
-    // Demo: đặt token giả, điều hướng vào trang chính
-    const token = "ras-demo-token";
-    const payload = { token, user, ts: Date.now() };
-    const store = remember ? localStorage : sessionStorage;
-    store.setItem("ras_auth", JSON.stringify(payload));
-
-    const redirectTo = (location.state && location.state.from) || "/";
-    navigate(redirectTo, { replace: true });
-  }
+    fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user, password: pass })
+    })
+      .then(async (r) => {
+        if (!r.ok) {
+          if (r.status === 401) throw new Error("Sai mật khẩu");
+          const j = await r.json().catch(() => ({}));
+          throw new Error(j?.message || "Đăng nhập thất bại");
+        }
+        return r.json();
+      })
+      .then((res) => {
+        const payload = { token: res.token, user: res.username, role: res.role, ts: Date.now() };
+        const store = remember ? localStorage : sessionStorage;
+        store.setItem("ras_auth", JSON.stringify(payload));
+        const redirectTo = (location.state && location.state.from) || "/";
+        navigate(redirectTo, { replace: true });
+      })
+      .catch((err) => setError(err.message));
+  };
 
   return (
-    <div className="min-h-screen grid md:grid-cols-2 bg-slate-50">
-      {/* Left visual */}
-      <div className="relative hidden md:block">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-100 via-white to-sky-100" />
-        <div className="absolute inset-0 p-10 flex flex-col">
-          <LogoRAS className="h-10" />
-          <div className="mt-auto" />
-          <div className="text-3xl font-bold text-slate-800 max-w-md leading-tight">
-            Nuôi dưỡng đam mê – Kiến tạo cộng đồng nghệ thuật
-          </div>
-          <div className="mt-3 text-slate-600 max-w-lg">
-            Hệ sinh thái đào tạo âm nhạc & mỹ thuật với lộ trình cá nhân hoá, sân chơi biểu diễn và kiểm định chất lượng định kỳ.
-          </div>
-        </div>
-        {/* Decorative blobs */}
-        <div className="absolute -top-10 -left-10 h-64 w-64 rounded-full" style={{background: THEME.primary, opacity: .12}} />
-        <div className="absolute -bottom-12 -right-12 h-72 w-72 rounded-full" style={{background: THEME.accent, opacity: .12}} />
-      </div>
+    <div className="relative min-h-screen">
+      {/* BG full-screen */}
+      <div
+        className="fixed inset-0 bg-center bg-cover"
+        style={{ backgroundImage: `url(${heroBg})` }}
+      />
+      {/* overlay làm tối nhẹ để form nổi hơn */}
+      <div className="fixed inset-0 bg-black/25" />
 
-      {/* Right form */}
-      <div className="flex items-center justify-center p-6">
-        <div className="w-full max-w-md">
-          <div className="mb-6 md:hidden"><LogoRAS /></div>
-          <div className="rounded-2xl border bg-white shadow-sm p-6">
-            <h1 className="text-2xl font-bold mb-1" style={{color: THEME.primary}}>Đăng nhập</h1>
-            <p className="text-slate-500 text-sm mb-6">Vui lòng nhập thông tin để tiếp tục</p>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Email hoặc Tên đăng nhập</label>
-                <input
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
-                  style={{ borderColor: "#e2e8f0", boxShadow: `0 0 0 0 rgba(0,0,0,0)`, }}
-                  value={user}
-                  onChange={(e) => setUser(e.target.value)}
-                  placeholder="nguyenvanA hoặc a@example.com"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Mật khẩu</label>
-                <input
-                  type="password"
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
-                  style={{ borderColor: "#e2e8f0" }}
-                  value={pass}
-                  onChange={(e) => setPass(e.target.value)}
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="inline-flex items-center gap-2 select-none text-sm">
-                  <input type="checkbox" checked={remember} onChange={(e)=>setRemember(e.target.checked)} />
-                  Ghi nhớ đăng nhập
-                </label>
-                <a className="text-sm" href="#" style={{color: THEME.accent}}>Quên mật khẩu?</a>
-              </div>
-
-              {error && <div className="text-red-600 text-sm">{error}</div>}
-
-              <button
-                type="submit"
-                className="w-full py-2.5 rounded-lg text-white font-semibold shadow"
-                style={{ background: THEME.primary }}
-              >
-                Đăng nhập
-              </button>
-
-              <div className="text-xs text-slate-500 text-center"></div>
-            </form>
+      {/* content */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+        <div
+          className="w-full max-w-md rounded-2xl border shadow-xl backdrop-blur-sm"
+          style={{ background: "rgba(255,255,255,0.9)", borderColor: "#e5e7eb" }}
+        >
+          {/* header form với logo bên phải */}
+          <div className="flex items-start justify-between p-6 pb-3">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Đăng nhập</h1>
+              <p className="text-slate-600 text-sm">Vui lòng nhập thông tin để tiếp tục</p>
+            </div>
+            <img src={rasLogo} alt="RAS Logo" className="h-10 w-auto object-contain ml-4" />
           </div>
 
-          <div className="text-xs text-slate-500 text-center mt-4">
+          <form onSubmit={onSubmit} className="space-y-4 px-6 pb-6" autoComplete="on">
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium mb-1 text-slate-800">
+                Email hoặc Tên đăng nhập
+              </label>
+              <input
+                id="username"
+                name="username"
+                autoComplete="username"
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
+                style={{ borderColor: "#e2e8f0" }}
+                value={user}
+                onChange={(e) => { setUser(e.target.value); if (error) setError(""); }}
+                placeholder="nguyenvanA hoặc a@example.com"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium mb-1 text-slate-800">
+                Mật khẩu
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
+                style={{ borderColor: "#e2e8f0" }}
+                value={pass}
+                onChange={(e) => { setPass(e.target.value); if (error) setError(""); }}
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="inline-flex items-center gap-2 select-none text-sm text-slate-800">
+                <input type="checkbox" checked={remember} onChange={(e)=>setRemember(e.target.checked)} />
+                Ghi nhớ đăng nhập
+              </label>
+              <a className="text-sm" href="#" style={{ color: THEME.accent }}>Quên mật khẩu?</a>
+            </div>
+
+            {error && (
+              <p className="text-red-600 text-sm">• {error}</p>
+            )}
+
+            {/* Nút theo tông RAS: gradient tím→xanh, chữ trắng */}
+            <button
+              type="submit"
+              className="w-full py-2.5 rounded-lg text-white font-semibold shadow transition active:scale-[.99]"
+              style={{
+                backgroundImage: `linear-gradient(90deg, ${THEME.primary}, ${THEME.accent})`
+              }}
+              onMouseEnter={(e)=> e.currentTarget.style.backgroundImage =
+                `linear-gradient(90deg, ${THEME.primaryDark}, ${THEME.accent})`}
+              onMouseLeave={(e)=> e.currentTarget.style.backgroundImage =
+                `linear-gradient(90deg, ${THEME.primary}, ${THEME.accent})`}
+            >
+              Đăng nhập
+            </button>
+          </form>
+
+          {/* dải brand mảnh dưới form */}
+          <div
+            className="h-1 rounded-b-2xl"
+            style={{
+              backgroundImage: `linear-gradient(90deg, ${THEME.primary}, ${THEME.accent}, ${THEME.yellow})`
+            }}
+          />
+          <div className="text-xs text-slate-600 text-center py-3">
             © {new Date().getFullYear()} RAS Music & Art
           </div>
         </div>

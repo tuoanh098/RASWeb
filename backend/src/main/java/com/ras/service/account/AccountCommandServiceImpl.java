@@ -5,7 +5,6 @@ import com.ras.domain.account.NguoiDungRepository;
 import com.ras.service.account.dto.*;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,7 +14,6 @@ import org.springframework.web.server.ResponseStatusException;
 public class AccountCommandServiceImpl implements AccountCommandService {
 
     private final NguoiDungRepository repo;
-    private final BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
 
     public AccountCommandServiceImpl(NguoiDungRepository repo) { this.repo = repo; }
 
@@ -28,7 +26,7 @@ public class AccountCommandServiceImpl implements AccountCommandService {
 
         NguoiDung e = new NguoiDung();
         e.setUsername(r.username().trim());
-        e.setPasswordHash(bcrypt.encode(r.new_password()));
+        e.setPasswordHash(r.new_password());
         e.setEmail(r.email());
         // ưu tiên tên Việt
         String vaiTro = r.vai_tro() != null && !r.vai_tro().isBlank()
@@ -57,7 +55,7 @@ public class AccountCommandServiceImpl implements AccountCommandService {
         if (r.id_nhan_vien()!=null) e.setIdNhanVien(r.id_nhan_vien());
         if (r.hoat_dong()!=null) e.setHoatDong(r.hoat_dong());
         else if (r.active()!=null) e.setHoatDong(r.active());
-        if (r.new_password()!=null && !r.new_password().isBlank()) e.setPasswordHash(bcrypt.encode(r.new_password()));
+        if (r.new_password()!=null && !r.new_password().isBlank()) e.setPasswordHash(r.new_password());
 
         try {
             e = repo.save(e);
@@ -80,7 +78,7 @@ public class AccountCommandServiceImpl implements AccountCommandService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu mật khẩu mới");
         var e = repo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản"));
-        e.setPasswordHash(bcrypt.encode(newPassword));
+        e.setPasswordHash(newPassword);
         repo.save(e);
     }
 }
