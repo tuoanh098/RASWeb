@@ -64,7 +64,7 @@ public class EmployeeController {
 
     /* =================== DETAIL =================== */
     @GetMapping("/{id}")
-    public Employee get(@PathVariable("id") Long id) {
+    public Employee get(@PathVariable("id") Integer id) {
         return repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên"));
     }
 
@@ -77,13 +77,13 @@ public class EmployeeController {
 
     /* =================== UPDATE =================== */
     @PutMapping("/{id}")
-    public Employee update(@PathVariable("id") Long id, @RequestBody Employee patch) {
+    public Employee update(@PathVariable("id") Integer id, @RequestBody Employee patch) {
         return commandService.update(id, patch);
     }
 
     /* =================== DELETE: cứng -> fallback ngưng hoạt động =================== */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable("id") Long id) {
+    public ResponseEntity<?> delete(@PathVariable("id") Integer id) {
         try {
             commandService.deleteHard(id); // thử xoá cứng
             return ResponseEntity.noContent().build();
@@ -100,7 +100,7 @@ public class EmployeeController {
 
     /* =================== UPLOAD AVATAR =================== */
     @PostMapping(path = "/{id}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Map<String, Object> uploadAvatar(@PathVariable("id") Long id, @RequestParam("file") MultipartFile file) {
+    public Map<String, Object> uploadAvatar(@PathVariable("id") Integer id, @RequestParam("file") MultipartFile file) {
         String url = commandService.saveAvatarAndReturnUrl(id, file);
         return Map.of("url", url, "updatedAt", LocalDateTime.now());
     }

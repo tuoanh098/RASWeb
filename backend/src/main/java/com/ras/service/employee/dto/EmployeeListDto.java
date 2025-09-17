@@ -4,7 +4,7 @@ import lombok.*;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class EmployeeListDto {
-    private Long id;
+    private Integer id;
     private String hoTen;         // ho_ten
     private String soDienThoai;   // so_dien_thoai
     private String email;

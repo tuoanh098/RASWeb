@@ -5,7 +5,11 @@ import com.ras.domain.employee.EmployeeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.nio.file.*;
 import java.time.LocalDateTime;
@@ -23,7 +27,11 @@ public class EmployeeCommandServiceImpl implements EmployeeCommandService {
 
     @Override
     public Employee create(Employee payload) {
-        payload.setId(null);
+        // ID = 4 số cuối SĐT (Integer), chèn trực tiếp
+        String digits = payload.getSoDienThoai().replaceAll("\\D", "");
+        Integer genId = Integer.parseInt(digits.substring(digits.length() - 4));
+        payload.setId(genId);
+
         payload.setNgayTao(LocalDateTime.now());
         payload.setNgaySua(LocalDateTime.now());
         if (payload.getHoatDong() == null) payload.setHoatDong(Boolean.TRUE);
@@ -31,11 +39,10 @@ public class EmployeeCommandServiceImpl implements EmployeeCommandService {
     }
 
     @Override
-    public Employee update(Long id, Employee patch) {
+    public Employee update(Integer id, Employee patch) {
         Employee e = employeeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên id=" + id));
 
-        // cập nhật các trường cho phép (để nhanh gọn, patch-null nghĩa là bỏ qua)
         if (patch.getHoTen() != null) e.setHoTen(patch.getHoTen());
         if (patch.getSoDienThoai() != null) e.setSoDienThoai(patch.getSoDienThoai());
         if (patch.getEmail() != null) e.setEmail(patch.getEmail());
@@ -57,14 +64,13 @@ public class EmployeeCommandServiceImpl implements EmployeeCommandService {
     }
 
     @Override
-    public void deleteHard(Long id) {
-        // sẽ ném DataIntegrityViolationException nếu FK cản — cho controller tự fallback
+    public void deleteHard(Integer id) {
         employeeRepository.deleteById(id);
         employeeRepository.flush();
     }
 
     @Override
-    public Employee deactivate(Long id) {
+    public Employee deactivate(Integer id) {
         Employee e = employeeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên id=" + id));
         e.setHoatDong(Boolean.FALSE);
@@ -72,32 +78,57 @@ public class EmployeeCommandServiceImpl implements EmployeeCommandService {
         return employeeRepository.save(e);
     }
 
+    @Value("${app.public-base-url:}")
+    private String publicBaseUrl;
+
     @Override
-    public String saveAvatarAndReturnUrl(Long id, MultipartFile file) {
-        if (file == null || file.isEmpty()) throw new IllegalArgumentException("File rỗng");
+public String saveAvatarAndReturnUrl(Integer id, MultipartFile file) {
+    if (file == null || file.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File rỗng");
+    }
 
-        Employee e = employeeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên id=" + id));
+    Employee e = employeeRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy nhân viên id=" + id));
 
-        try {
-            Path root = Paths.get("uploads", "avatars", String.valueOf(id));
-            Files.createDirectories(root);
-            String ext = Optional.ofNullable(file.getOriginalFilename())
-                    .filter(fn -> fn.contains("."))
-                    .map(fn -> fn.substring(fn.lastIndexOf(".")))
-                    .orElse(".jpg");
-            String filename = System.currentTimeMillis() + ext;
-            Path dest = root.resolve(filename);
-            Files.copy(file.getInputStream(), dest, StandardCopyOption.REPLACE_EXISTING);
-
-            // URL tĩnh do WebConfig map /uploads/** -> thư mục ./uploads
-            String url = "/uploads/avatars/" + id + "/" + filename;
-            e.setAvatarUrl(url);
-            e.setNgaySua(LocalDateTime.now());
-            employeeRepository.save(e);
-            return url;
-        } catch (IOException ex) {
-            throw new RuntimeException("Lưu avatar thất bại", ex);
+    try {
+        // Lấy đuôi file (mặc định .jpg nếu không có)
+        String orig = Optional.ofNullable(file.getOriginalFilename()).orElse("avatar.jpg");
+        String ext = ".jpg";
+        int dot = orig.lastIndexOf('.');
+        if (dot >= 0 && dot < orig.length() - 1) {
+            ext = orig.substring(dot);
         }
+
+        String filename = System.currentTimeMillis() + ext;
+
+        // Lưu file vật lý: uploads/avatars/{id}/{timestamp}.ext
+        Path dir = Paths.get("uploads", "avatars", String.valueOf(id));
+        Files.createDirectories(dir);
+        Path dest = dir.resolve(filename);
+        Files.copy(file.getInputStream(), dest, StandardCopyOption.REPLACE_EXISTING);
+
+        // Tạo base URL: ưu tiên cấu hình app.public-base-url, nếu trống thì lấy từ request hiện tại
+        String base = (publicBaseUrl != null && !publicBaseUrl.isBlank())
+                ? publicBaseUrl.replaceAll("/+$", "")     // bỏ '/' cuối
+                : ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+
+        // Ghép URL tuyệt đối để lưu DB
+        String url = UriComponentsBuilder.fromUriString(base)
+                .path("/uploads/avatars/")
+                .path(String.valueOf(id))
+                .path("/")
+                .path(filename)
+                .build(true) // encode
+                .toUriString();
+
+        e.setAvatarUrl(url);
+        e.setNgaySua(LocalDateTime.now());
+        employeeRepository.save(e);
+
+        return url;
+    } catch (IOException ex) {
+        throw new RuntimeException("Lưu avatar thất bại", ex);
     }
 }
+
+    }

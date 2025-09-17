@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class EmployeeDetailDto {
-    private Long id;
+    private Integer id;
     private String hoTen;
     private String soDienThoai;
     private String email;

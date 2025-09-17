@@ -9,8 +9,8 @@ import java.time.LocalDateTime;
 public class Employee {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id")
+    private Integer  id;
 
     @Column(name = "ho_ten")
     private String hoTen;
@@ -71,8 +71,8 @@ public class Employee {
 
     /* ==== getters & setters ==== */
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Integer  getId() { return id; }
+    public void setId(Integer  id) { this.id = id; }
 
     public String getHoTen() { return hoTen; }
     public void setHoTen(String hoTen) { this.hoTen = hoTen; }

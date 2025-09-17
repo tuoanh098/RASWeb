@@ -33,7 +33,7 @@ public class EmployeeQueryServiceImpl implements EmployeeQueryService {
     }
 
     @Override
-    public EmployeeDetailDto getById(Long id) {
+    public EmployeeDetailDto getById(Integer id) {
         Employee e = employeeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên id=" + id));
         return EmployeeMapper.toDetailDto(e);

@@ -56,7 +56,7 @@ export default function Login() {
       <div className="fixed inset-0 bg-black/25" />
 
       {/* content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+      <div className="relative z-10 min-h-screen flex items-center justify-center md:justify-start p-4 md:pl-12 lg:pl-16">
         <div
           className="w-full max-w-md rounded-2xl border shadow-xl backdrop-blur-sm"
           style={{ background: "rgba(255,255,255,0.9)", borderColor: "#e5e7eb" }}
@@ -67,7 +67,6 @@ export default function Login() {
               <h1 className="text-2xl font-bold text-slate-900">Đăng nhập</h1>
               <p className="text-slate-600 text-sm">Vui lòng nhập thông tin để tiếp tục</p>
             </div>
-            <img src={rasLogo} alt="RAS Logo" className="h-10 w-auto object-contain ml-4" />
           </div>
 
           <form onSubmit={onSubmit} className="space-y-4 px-6 pb-6" autoComplete="on">
@@ -110,7 +109,7 @@ export default function Login() {
                 <input type="checkbox" checked={remember} onChange={(e)=>setRemember(e.target.checked)} />
                 Ghi nhớ đăng nhập
               </label>
-              <a className="text-sm" href="#" style={{ color: THEME.accent }}>Quên mật khẩu?</a>
+              {/* <a className="text-sm" href="#" style={{ color: THEME.accent }}>Quên mật khẩu?</a> */}
             </div>
 
             {error && (
