@@ -126,11 +126,13 @@ export default function Layout({ children }) {
             {/* dải brand */}
             <div className="mt-3 h-2 rounded-full bg-gradient-to-r from-ras-yellow via-ras-purple to-ras-blue" />
           </div>
-
+          <div className="space-y-1">
+              <SectionPanel open={true} onClick={() => navigate()}>
+              Tổng quan
+            </SectionPanel>
+          </div>
           {/* ===== Tổng quan (cũng là panel giống các nút) ===== */}
-          <SectionPanel open={true} onClick={() => {}}>
-            Tổng quan
-          </SectionPanel>
+
 
           {/* ===== KHÓA HỌC ===== */}
           <div className="space-y-1">

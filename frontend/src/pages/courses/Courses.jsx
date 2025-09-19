@@ -209,7 +209,7 @@ export default function CoursePage() {
                   <th>Thời lượng</th>
                   <th>Mã</th>
                   <th>Tên hiển thị</th>
-                  <th className="text-right">Hành động</th>
+                  <th className="text-right"></th>
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -222,8 +222,8 @@ export default function CoursePage() {
                     <td className="px-3 py-2">{it.ma || "—"}</td>
                     <td className="px-3 py-2">{it.ten_hien_thi}</td>
                     <td className="px-3 py-2 text-right">
-                      <button className="px-2 py-1 rounded hover:bg-gray-50" onClick={()=>openEdit(it)}>Sửa</button>
-                      <button className="px-2 py-1 text-red-600 rounded hover:bg-red-50" onClick={()=>onDelete(it.id)}>Xoá</button>
+                      <button className="px-2 py-1 rounded hover:bg-gray-50" onClick={()=>openEdit(it)}></button>
+                      <button className="px-2 py-1 text-red-600 rounded hover:bg-red-50" onClick={()=>onDelete(it.id)}></button>
                     </td>
                   </tr>
                 ))}
@@ -244,12 +244,6 @@ export default function CoursePage() {
         onSaved={load}
       />
 
-      {/* (Tuỳ chọn) Preview giá áp dụng khi đang sửa */}
-      {editing?.id && (
-        <Section title="Giá đang áp dụng" right={<button className="px-2 py-1 rounded border" onClick={()=>CoursesApi.pricing(editing.id).then(console.log)}>Debug API</button>}>
-          <div className="text-sm text-gray-600">Nếu muốn hiển thị chi tiết bảng giá, mình có thể render thêm table từ <code>/api/courses/{editing.id}/pricing</code>.</div>
-        </Section>
-      )}
     </div>
   );
 }

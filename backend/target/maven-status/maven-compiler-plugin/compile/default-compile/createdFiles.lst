@@ -5,8 +5,10 @@ com\ras\web\api\salary\PayrollController$1Res.class
 com\ras\service\course\dto\CourseUpsertDTO.class
 com\ras\service\salary\SalaryMappers.class
 com\ras\service\enroll\EnrollmentRow.class
+com\ras\service\auth\AuthService.class
 com\ras\domain\account\NguoiDung.class
 com\ras\domain\course\KhoaHocMauRepository.class
+com\ras\service\auth\AuthServiceImpl.class
 com\ras\service\course\dto\CourseDTO.class
 com\ras\service\student\StudentQueryService.class
 com\ras\domain\salary\NvTruc.class
@@ -16,14 +18,17 @@ com\ras\service\enroll\dto\EnrollmentDto.class
 com\ras\domain\course\KhoaHoc.class
 com\ras\domain\course\LoaiLop.class
 com\ras\domain\dashboard\DutyTodayRepo.class
+com\ras\service\auth\AuthSessionStore$SessionData.class
 com\ras\web\api\pricing\PricingController.class
 com\ras\domain\enroll\EnrollmentRepository.class
 com\ras\service\account\AccountQueryServiceImpl.class
+com\ras\web\api\auth\AuthController.class
 com\ras\service\course\CourseService.class
 com\ras\service\course\dto\MonthlySignUpStatDTO.class
 com\ras\service\account\AccountRepository.class
 com\ras\service\course\dto\CoursePriceDTO.class
 com\ras\domain\salary\NvPhuCapKhacRepository.class
+com\ras\service\auth\dto\LoginRequest.class
 com\ras\domain\salary\NvHoaHongChotLop.class
 com\ras\service\commission\CommissionAwardServiceImpl.class
 com\ras\service\course\dto\CourseDTO$CourseDTOBuilder.class
@@ -58,6 +63,7 @@ com\ras\service\student\dto\StudentListItemDto$StudentListItemDtoBuilder.class
 com\ras\domain\course\BangGiaHocPhi.class
 com\ras\domain\student\HocVien.class
 com\ras\web\api\employee\EmployeeController.class
+com\ras\service\auth\AuthSessionStore.class
 com\ras\web\api\salary\PayrollController.class
 com\ras\service\schedule\XepLopService.class
 com\ras\domain\salary\NvTruc$Ca.class
@@ -115,6 +121,7 @@ com\ras\domain\salary\NvPhuCapKhac.class
 com\ras\service\duty\NvLichTrucService.class
 com\ras\service\course\dto\CourseTemplateDTO$CourseTemplateDTOBuilder.class
 com\ras\service\student\StudentCommandService.class
+com\ras\service\auth\dto\LoginResponse.class
 com\ras\service\student\dto\StudentListItemDto.class
 com\ras\domain\duty\NvLichTruc.class
 com\ras\service\student\dto\StudentUpsertReq.class
@@ -147,6 +154,7 @@ com\ras\service\dashboard\DashboardService.class
 com\ras\web\api\salary\DeductionController.class
 com\ras\domain\course\BangGiaHocPhiMucRepository.class
 com\ras\domain\salary\NvKyLuongRepository$PeriodView.class
+com\ras\service\auth\dto\MeDto.class
 com\ras\service\enroll\EnrollmentService.class
 com\ras\service\course\dto\CourseTemplateDTO.class
 com\ras\domain\salary\NvPhuCapKhac$NvPhuCapKhacBuilder.class

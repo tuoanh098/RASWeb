@@ -1,7 +1,7 @@
-// src/pages/management/Dashboard.jsx
+// src/pages/management/DashboardMock.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  TrendingUp, Users, GraduationCap, Banknote, CalendarDays, Building2, Trophy, Loader2
+  TrendingUp, Users, GraduationCap, Banknote, CalendarDays, Building2, Trophy, Loader2, RefreshCcw
 } from "lucide-react";
 import {
   LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -10,7 +10,7 @@ import {
 
 /* ======= RAS look & helpers ======= */
 const RAS_COLORS = {
-  primary: "#5B38ED",        // RAS Indigo
+  primary: "#5B38ED",
   primarySoft: "#F1EEFF",
   secondary: "#00B3FF",
   secondarySoft: "#E6F6FF",
@@ -64,76 +64,87 @@ function SectionTitle({ icon: Icon, title, right }) {
   );
 }
 
-/* ======= Dashboard (live data) ======= */
-export default function Dashboard() {
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+/* ======= Mock helpers ======= */
+const rand = (min, max) => Math.round(Math.random() * (max - min) + min);
+const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
 
-  // state for real data
-  const [kpis, setKpis] = useState({
-    employees: 0, students: 0, coursesRegistered: 0, revenueMonth: 0, revenueYear: 0,
+function genMonthlyRevenue() {
+  // tạo xu hướng tăng nhẹ theo tháng
+  return months.map((m, i) => ({
+    month: m,
+    revenue: rand(150, 300) * 1_000_000 + i * rand(5, 20) * 1_000_000,
+  }));
+}
+function genYearlyRevenue(baseYear) {
+  return Array.from({ length: 5 }, (_, k) => {
+    const y = baseYear - 4 + k;
+    return { year: y, revenue: rand(2, 8) * 1_000_000_000 + k * rand(200, 600) * 1_000_000_000 };
   });
+}
+function genDutyToday() {
+  const list = [
+    { id: 1, nhan_vien_ten: "Nguyễn An", chi_nhanh_ten: "Q7", ghi_chu: "Ca sáng" },
+    { id: 2, nhan_vien_ten: "Trần Bình", chi_nhanh_ten: "Q1", ghi_chu: "Ca chiều" },
+    { id: 3, nhan_vien_ten: "Lê Chi", chi_nhanh_ten: "Q7", ghi_chu: "Ca tối" },
+  ];
+  return list.slice(0, rand(0, list.length)); // có thể không có lịch
+}
+function genTopAdvisors() {
+  const names = ["Dương", "Quyên", "Khang"];
+  return names.map((n, i) => ({ id: i + 1, name: n, count: rand(5, 25) }));
+}
+
+/* ======= Dashboard (mock data) ======= */
+export default function Dashboard() {
+  const thisYear = new Date().getFullYear();
+  const [year, setYear] = useState(thisYear);
+  const [loading, setLoading] = useState(false);
+
+  // mock states
+  const [kpis, setKpis] = useState({ employees: 28, students: 312, coursesRegistered: 96, revenueMonth: 0, revenueYear: 0 });
   const [dutyToday, setDutyToday] = useState([]);
   const [monthlyRevenue, setMonthlyRevenue] = useState([]);
   const [yearlyRevenue, setYearlyRevenue] = useState([]);
   const [financeBreakdown, setFinanceBreakdown] = useState([]);
   const [topAdvisors, setTopAdvisors] = useState([]);
 
+  const calcFinance = (mData) => {
+    const revenue = mData.reduce((s, d) => s + d.revenue, 0);
+    const payroll = Math.round(revenue * 0.45);
+    const profit = revenue - payroll;
+    return [
+      { name: "Doanh thu", value: revenue },
+      { name: "Chi phí", value: payroll },
+      { name: "Lợi nhuận", value: profit },
+    ];
+  };
+
+  const refreshMock = () => {
+    setLoading(true);
+    // mô phỏng delay nhẹ
+    setTimeout(() => {
+      const m = genMonthlyRevenue();
+      const y = genYearlyRevenue(thisYear);
+      const duty = genDutyToday();
+      const advisors = genTopAdvisors();
+
+      setMonthlyRevenue(m);
+      setYearlyRevenue(y);
+      setDutyToday(duty);
+      setTopAdvisors(advisors);
+
+      const revMonth = m[new Date().getMonth()]?.revenue ?? 0;
+      const revYear = m.reduce((s, d) => s + d.revenue, 0);
+      setKpis((k) => ({ ...k, revenueMonth: revMonth, revenueYear: revYear }));
+
+      setFinanceBreakdown(calcFinance(m));
+      setLoading(false);
+    }, 400);
+  };
+
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const [k, duty, m, y, fin, top] = await Promise.all([
-          fetch("/api/view/dashboard/kpis").then(r => r.json()),
-          fetch("/api/view/dashboard/duty-today").then(r => r.json()),
-          fetch(`/api/view/dashboard/revenue-monthly?year=${year}`).then(r => r.json()),
-          fetch("/api/view/dashboard/revenue-yearly").then(r => r.json()),
-          fetch("/api/view/dashboard/finance-year").then(r => r.json()),
-          fetch(`/api/view/dashboard/top-advisors?year=${year}&limit=5`).then(r => r.json()),
-        ]);
-
-        setKpis({
-          employees: k?.totalEmployees ?? 0,
-          students: k?.totalStudents ?? 0,
-          coursesRegistered: k?.totalCoursesRegistered ?? 0,
-          revenueMonth: k?.revenueMonth ?? 0,
-          revenueYear: k?.revenueYear ?? 0,
-        });
-
-        setDutyToday(Array.isArray(duty) ? duty : []);
-
-        setMonthlyRevenue(
-          (Array.isArray(m) ? m : []).map(d => ({
-            month: d.month ?? "01",
-            revenue: Number(d.revenue ?? 0),
-          }))
-        );
-
-        setYearlyRevenue(Array.isArray(y) ? y : []);
-
-        const fy = (Array.isArray(fin) ? fin : []).find(x => Number(x.year) === Number(year))
-          || { revenue: 0, payroll: 0, profit: 0 };
-        setFinanceBreakdown([
-          { name: "Doanh thu", value: Number(fy.revenue ?? 0) },
-          { name: "Chi phí", value: Number(fy.payroll ?? 0) },
-          { name: "Lợi nhuận", value: Number(fy.profit ?? 0) },
-        ]);
-
-        setTopAdvisors(
-          (Array.isArray(top) ? top : []).map((t) => ({
-            id: t.advisorId,
-            name: t.advisorName,
-            count: t.signupCount,
-          }))
-        );
-      } catch (e) {
-        setError(e?.message || "Không lấy được dữ liệu dashboard");
-      } finally {
-        setLoading(false);
-      }
-    })();
+    refreshMock();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year]);
 
   return (
@@ -151,13 +162,20 @@ export default function Dashboard() {
             onChange={(e) => setYear(Number(e.target.value))}
             title="Năm"
           >
-            {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - 3 + i).map((y) => (
+            {Array.from({ length: 6 }, (_, i) => thisYear - 3 + i).map((y) => (
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
+          <button
+            className="flex items-center gap-2 border rounded-xl px-3 py-2 text-sm hover:bg-slate-50"
+            onClick={refreshMock}
+            title="Làm mới mock data"
+          >
+            <RefreshCcw size={16} /> Làm mới
+          </button>
           {loading && (
             <div className="flex items-center gap-2 text-slate-500 text-sm">
-              <Loader2 className="animate-spin" size={16} /> Đang tải…
+              <Loader2 className="animate-spin" size={16} /> Đang tạo dữ liệu…
             </div>
           )}
         </div>
@@ -176,7 +194,7 @@ export default function Dashboard() {
       {/* Row: Monthly revenue + Finance breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="p-4 lg:col-span-2">
-          <SectionTitle icon={TrendingUp} title={`Doanh thu theo tháng • ${year}`} right={error && <span className="text-xs text-rose-500">{error}</span>} />
+          <SectionTitle icon={TrendingUp} title={`Doanh thu theo tháng • ${year}`} />
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyRevenue} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -233,9 +251,9 @@ export default function Dashboard() {
               {dutyToday.map((x) => (
                 <div key={x.id} className="flex items-center justify-between bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2">
                   <div>
-                    <div className="font-medium text-indigo-900">{x.nhanVienTen || x.nhan_vien_ten}</div>
+                    <div className="font-medium text-indigo-900">{x.nhan_vien_ten}</div>
                     <div className="text-xs text-indigo-800/80">
-                      {(x.chiNhanhTen || x.chi_nhanh_ten) ?? ""}{x.ghiChu || x.ghi_chu ? ` • ${(x.ghiChu || x.ghi_chu)}` : ""}
+                      {(x.chi_nhanh_ten ?? "")}{x.ghi_chu ? ` • ${x.ghi_chu}` : ""}
                     </div>
                   </div>
                   <Building2 size={18} className="text-indigo-600" />
@@ -260,8 +278,6 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
-
-      {error && <div className="text-sm text-rose-600">{error}</div>}
     </div>
   );
 }

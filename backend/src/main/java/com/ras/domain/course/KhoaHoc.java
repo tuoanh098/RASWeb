@@ -16,9 +16,9 @@ public class KhoaHoc {
     private Long monHocId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "loai_lop", nullable = false)
+    @Column(name = "loai_lop", nullable = false, length = 16)
     private LoaiLop loaiLop;
-
+    
     @Column(name = "thoi_luong_phut", nullable = false)
     private Short thoiLuongPhut;
 
