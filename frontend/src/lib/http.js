@@ -17,7 +17,6 @@ export async function req(method, url, body, options = {}) {
     credentials: "include",
   });
 
-  // Response có thể không có body (204/205 hoặc content-length=0 hoặc không phải JSON)
   const noBody =
     res.status === 204 ||
     res.status === 205 ||

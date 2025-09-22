@@ -39,7 +39,6 @@ public class EmployeeQueryServiceImpl implements EmployeeQueryService {
         return EmployeeMapper.toDetailDto(e);
     }
 
-    @SuppressWarnings("null")
     private Specification<Employee> buildSpec(String kw, String role) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();

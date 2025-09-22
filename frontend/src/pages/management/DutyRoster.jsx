@@ -203,7 +203,7 @@ function DayColumn({ day, events, onClickDay, onDelete }) {
               <div className="opacity-90 truncate">{ev.chi_nhanh_ten}{ev.chi_nhanh_id ? ` (#${ev.chi_nhanh_id})` : ""}</div>
               {ev.ghi_chu && <div className="opacity-90 truncate italic">“{ev.ghi_chu}”</div>}
             </div>
-            <button title="Xoá" className="text-rose-600 hover:text-rose-800 text-lg leading-none" onClick={() => onDelete?.(ev.id)}>×</button>
+            <button title="Xoá" className="text-rose-600 hover:text-rose-800 text-lg leading-none" onClick={() => onDelete?.(ev.id)}>x</button>
           </div>
         ))}
       </div>

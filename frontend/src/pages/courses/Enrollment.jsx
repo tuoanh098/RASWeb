@@ -1,15 +1,15 @@
+// src/pages/enroll/Enrollment.jsx
 import { useEffect, useMemo, useState } from "react";
+import ConfirmDialog from "../../components/ConfirmDialog.jsx"; // <-- chỉnh lại path nếu khác
 
-
+/* ================= HTTP helpers ================= */
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
-// --------------------------- http helpers ---------------------------
 async function apiGet(path) {
   const res = await fetch(API_BASE + path, { headers: { "Content-Type": "application/json" } });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
-
 async function apiPost(path, body) {
   const res = await fetch(API_BASE + path, {
     method: "POST",
@@ -20,12 +20,9 @@ async function apiPost(path, body) {
   return res.json();
 }
 
-// --------------------------- utils ---------------------------
-function ymNow() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
+/* ================= Utils ================= */
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
 }
 function fmtVnd(v) {
   try {
@@ -34,23 +31,21 @@ function fmtVnd(v) {
     return String(v ?? 0);
   }
 }
- function parseVndInput(str) {
-   if (str == null) return 0;
-   // chỉ giữ chữ số, bỏ mọi ký tự định dạng (., khoảng trắng)
-   const digits = String(str).replace(/\D/g, "");
-   return digits ? Number(digits) : 0;
- }
+function parseVndInput(str) {
+  const digits = String(str ?? "").replace(/\D/g, "");
+  return digits ? Number(digits) : 0;
+}
 function pickFirst(obj, keys, fallback) {
   for (const k of keys) if (obj && obj[k] != null) return obj[k];
   return fallback;
 }
 function normalizeItems(raw = []) {
-  // map to {id, label, sub}
   return raw
     .map((r) => {
       const id =
         r.id ??
         r.hoc_vien_id ??
+        r.khoa_hoc_id ??
         r.khoa_hoc_mau_id ??
         r.nhan_vien_id ??
         r.giao_vien_id ??
@@ -66,8 +61,6 @@ function normalizeItems(raw = []) {
     })
     .filter((x) => x.id != null);
 }
-
-// --------------------------- debounced hook ---------------------------
 function useDebounce(value, delay = 350) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -77,7 +70,7 @@ function useDebounce(value, delay = 350) {
   return debounced;
 }
 
-// --------------------------- Async dropdown ---------------------------
+/* ================= Async search dropdown ================= */
 async function searchViaCandidates(urls = []) {
   for (const url of urls) {
     try {
@@ -102,16 +95,19 @@ const fetchStudents = (q) =>
   searchViaCandidates([
     `/api/students?size=10&q=${encodeURIComponent(q)}`,
     `/api/hoc-vien?size=10&q=${encodeURIComponent(q)}`,
-    `/api/students/search?q=${encodeURIComponent(q)}`,
-    `/api/hoc-vien/search?q=${encodeURIComponent(q)}`,
   ]);
 
-const fetchCourses = (q) =>
+const fetchRealCourses = (q) =>
+  searchViaCandidates([
+    `/api/khoa-hoc?size=20&q=${encodeURIComponent(q)}`,
+    `/api/courses?size=20&q=${encodeURIComponent(q)}`,
+    `/api/khoa-hoc/search?q=${encodeURIComponent(q)}`,
+  ]);
+
+const fetchCourseTemplates = (q) =>
   searchViaCandidates([
     `/api/khoa-hoc-mau?size=20&q=${encodeURIComponent(q)}`,
     `/api/course-templates?size=20&q=${encodeURIComponent(q)}`,
-    `/api/courses/templates?q=${encodeURIComponent(q)}`,
-    `/api/courses?type=template&q=${encodeURIComponent(q)}`,
   ]);
 
 const fetchTeachers = (q) =>
@@ -222,354 +218,171 @@ function AsyncSearchSelect({ value, onChange, placeholder = "Tìm...", fetcher, 
   );
 }
 
-// --------------------------- tuition auto ---------------------------
-async function getTuitionAuto({ courseTemplateId, branchId, date }) {
-  const d = date || new Date().toISOString().slice(0, 10);
-  const tryUrls = [
-    `/api/pricing/tuition?khoaHocMauId=${courseTemplateId}&chiNhanhId=${branchId}&date=${d}`,
-    `/api/pricing/tuition?khoa_hoc_mau_id=${courseTemplateId}&chi_nhanh_id=${branchId}&ngay=${d}`,
-    `/api/khoa-hoc-mau/${courseTemplateId}/tuition?branchId=${branchId}&date=${d}`,
-    `/api/tuition?courseTemplateId=${courseTemplateId}&branchId=${branchId}&date=${d}`,
-  ];
-  for (const u of tryUrls) {
-    try {
-      const res = await apiGet(u);
-      const val = Number(
-        res?.hoc_phi || res?.hoc_phi_khoa || res?.hoc_phi_buoi || res?.tuition || res,
-      );
-      if (val > 0) return val;
-    } catch {
-      /* try next */
-    }
-  }
-  // fallback: thử lấy courseId rồi hỏi bảng giá theo course
-  try {
-    const detail = await apiGet(`/api/khoa-hoc-mau/${courseTemplateId}`);
-    const khId = detail?.khoa_hoc_id ?? detail?.khoaHocId;
-    if (khId) {
-      const more = [
-        `/api/pricing/tuition?khoaHocId=${khId}&chiNhanhId=${branchId}&date=${d}`,
-        `/api/pricing/tuition?khoa_hoc_id=${khId}&chi_nhanh_id=${branchId}&ngay=${d}`,
-        `/api/banggia/lookup?khoaHocId=${khId}&chiNhanhId=${branchId}&date=${d}`,
-      ];
-      for (const u of more) {
-        try {
-          const res = await apiGet(u);
-          const val = Number(
-            res?.hoc_phi || res?.hoc_phi_khoa || res?.hoc_phi_buoi || res?.tuition || res,
-          );
-          if (val > 0) return val;
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-  } catch {
-    /* ignore */
-  }
-  return 0;
-}
+/* ========= Options bảng giá ========= */
+const GD_OPTIONS = [
+  { value: "SO_CAP", label: "Sơ cấp" },
+  { value: "SO_TRUNG_CAP_CO_BAN", label: "Sơ trung cấp cơ bản" },
+  { value: "SO_TRUNG_CAP_NANG_CAO", label: "Sơ trung cấp nâng cao" },
+  { value: "TRUNG_CAP", label: "Trung cấp" },
+  { value: "TRUNG_CAP_CHUYEN_SAU", label: "Trung cấp chuyên sâu" },
+  { value: "TIEN_CHUYEN_NGHIEP", label: "Tiền chuyên nghiệp" },
+];
+const CAPDO_OPTIONS = [
+  { value: "PRE_GRADE", label: "Pre - Grade" },
+  { value: "GRADE_1", label: "Grade 1" },
+  { value: "GRADE_2", label: "Grade 2" },
+  { value: "GRADE_3", label: "Grade 3" },
+  { value: "GRADE_4", label: "Grade 4" },
+  { value: "GRADE_5", label: "Grade 5" },
+  { value: "GRADE_6", label: "Grade 6" },
+  { value: "GRADE_7", label: "Grade 7" },
+  { value: "GRADE_8", label: "Grade 8" },
+];
 
-// --------------------------- layout helpers ---------------------------
-function Section({ title, right, children }) {
-  return (
-    <div className="bg-white/80 border rounded-2xl p-4 md:p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg md:text-xl font-semibold text-gray-800">{title}</h2>
-        {right}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-// =========================== PAGE ===========================
+/* ======================= PAGE ======================= */
 export default function EnrollmentPage() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-
-  // form selections (objects)
+  // chọn
   const [studentOpt, setStudentOpt] = useState(null);
-  const [courseOpt, setCourseOpt] = useState(null);
+  const [courseRealOpt, setCourseRealOpt] = useState(null); // bắt buộc ưu tiên
+  const [courseTplOpt, setCourseTplOpt] = useState(null); // fallback (nếu backend có mapping)
   const [teacherOpt, setTeacherOpt] = useState(null);
   const [staffOpt, setStaffOpt] = useState(null);
   const [branchOpt, setBranchOpt] = useState(null);
 
-  const [manualBranchMode, setManualBranchMode] = useState(false);
-  const [branchIdText, setBranchIdText] = useState("");
-  
+  // filter giá
+  const [giaiDoan, setGiaiDoan] = useState("SO_CAP");
+  const [capDo, setCapDo] = useState("PRE_GRADE");
+  const [soBuoi, setSoBuoi] = useState(12);
+
+  // trạng thái
   const [hocPhiText, setHocPhiText] = useState("");
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState("");
-  const [autoPrice, setAutoPrice] = useState(null);
-  const [ngayDangKy, setNgayDangKy] = useState(() => new Date().toISOString().slice(0, 10));
+  const [ngayDangKy, setNgayDangKy] = useState(() => todayISO());
   const [ghiChu, setGhiChu] = useState("");
 
-  // listing
-  const [listStudentId, setListStudentId] = useState("");
-  const [items, setItems] = useState([]);
+  // confirm & banner
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [formError, setFormError] = useState("");
 
-  // monthly summary
-  const [month, setMonth] = useState(ymNow());
-  const [summary, setSummary] = useState({
-    month: ymNow(),
-    total_enrollments: 0,
-    total_tuition: 0,
-    total_commission_2pct: 0,
-  });
-
-  useEffect(() => {
-    document.title = "Đăng ký khóa học - RAS Enrollment";
-  }, []);
-
-    useEffect(() => {
-    (async () => {
-      try {
-        setPriceError("");
-        if (courseOpt?.id && branchOpt?.id) {
-          setPriceLoading(true);
-          // Ưu tiên gọi backend mới ở mục B (ổn định hơn)
-          const tryUrls = [
-            `/api/pricing/tuition?khoa_hoc_mau_id=${courseOpt.id}&chi_nhanh_id=${branchOpt.id}&ngay=${ngayDangKy}`,
-            `/api/pricing/tuition?khoaHocMauId=${courseOpt.id}&chiNhanhId=${branchOpt.id}&date=${ngayDangKy}`,
-          ];
-          let price = 0;
-          for (const u of tryUrls) {
-            try {
-              const r = await apiGet(u);
-              price = Number(r?.hoc_phi || 0);
-              if (price > 0) break;
-            } catch {/* thử URL tiếp theo */}
-          }
-          // fallback sang client logic cũ nếu backend chưa có
-          if (!(price > 0)) {
-            const v = await getTuitionAuto({ courseTemplateId: courseOpt.id, branchId: branchOpt.id, date: ngayDangKy });
-            price = Number(v || 0);
-          }
-
-          setAutoPrice(price > 0 ? price : null);
-          setHocPhiText(price > 0 ? new Intl.NumberFormat("vi-VN").format(price) : "");
-          if (!(price > 0)) setPriceError("Chưa thiết lập bảng giá cho chi nhánh/khóa này.");
-        } else {
-          setAutoPrice(null);
-          setHocPhiText("");
-        }
-      } catch {
-        setPriceError("Không lấy được học phí tự động.");
-      } finally {
-        setPriceLoading(false);
-      }
-    })();
-  }, [courseOpt, branchOpt, ngayDangKy]);
-
-  useEffect(() => {
-    // load summary on month change
-    (async () => {
-      try {
-        setError("");
-        const data = await apiGet(`/api/signups/summary?month=${encodeURIComponent(month)}`);
-        setSummary(data);
-      } catch (e) {
-        setError(normalizeErr(e));
-      }
-    })();
-  }, [month]);
-
-  // auto tuition when course + branch chosen
-  useEffect(() => {
-    (async () => {
-      try {
-        if (courseOpt?.id && branchOpt?.id) {
-          const v = await getTuitionAuto({
-            courseTemplateId: courseOpt.id,
-            branchId: branchOpt.id,
-            date: ngayDangKy,
-          });
-          if (v > 0) setHocPhiText(new Intl.NumberFormat("vi-VN").format(v));
-        }
-      } catch {
-        /* ignore */
-      }
-    })();
-  }, [courseOpt, branchOpt, ngayDangKy]);
+  const khId = useMemo(() => {
+    if (courseRealOpt?.id) return Number(courseRealOpt.id);
+    // fallback từ template -> gọi detail để lấy khóa thật (nếu hệ thống bạn có)
+    return null;
+  }, [courseRealOpt]);
 
   const hoaHongPreview = useMemo(() => {
     const v = parseVndInput(hocPhiText) * 0.02;
     return Math.round(v);
   }, [hocPhiText]);
 
-  // ---------------- actions ----------------
-  async function handleCreate(e) {
-    e?.preventDefault?.();
-    setError("");
-    setNotice("");
-
-    if (!studentOpt?.id || !courseOpt?.id) {
-      setError("Vui lòng chọn Học viên và Khóa học.");
-      return;
-    }
-
-    setLoading(true);
+  function fmtErr(e) {
     try {
+      const t = String(e?.message || e);
+      if (t.startsWith("{")) {
+        const o = JSON.parse(t);
+        return o.message || o.error || t;
+      }
+      return t;
+    } catch {
+      return String(e);
+    }
+  }
+
+  // Tự tính học phí từ bảng giá
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setPriceError("");
+      setHocPhiText("");
+      if (!khId || !branchOpt?.id) return;
+
+      setPriceLoading(true);
+      try {
+        const data = await apiGet(
+          `/api/pricing/tuition?khoa_hoc_id=${khId}&chi_nhanh_id=${branchOpt.id}` +
+            `&giai_doan=${encodeURIComponent(giaiDoan)}&cap_do=${encodeURIComponent(capDo)}&so_buoi=${soBuoi}`,
+        );
+        const price = Number(data?.hoc_phi_khoa || 0);
+        if (!alive) return;
+        if (price > 0) {
+          setHocPhiText(new Intl.NumberFormat("vi-VN").format(price));
+        } else {
+          setPriceError("Chưa có cấu hình giá phù hợp trong bang_gia_hoc_phi_muc.");
+        }
+      } catch (e) {
+        if (alive) setPriceError(fmtErr(e));
+      } finally {
+        if (alive) setPriceLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [khId, branchOpt, giaiDoan, capDo, soBuoi]);
+
+  function validateBeforeSubmit() {
+    if (!studentOpt?.id) return "Vui lòng chọn Học viên.";
+    if (!khId) return "Vui lòng chọn Khóa học (thực tế).";
+    if (!branchOpt?.id) return "Vui lòng chọn Chi nhánh.";
+    if (!hocPhiText) return "Không lấy được học phí. Hãy kiểm tra bộ lọc giá.";
+    return "";
+  }
+
+  async function submitCreate() {
+    try {
+      setFormError("");
+      setSuccessMsg("");
+      const err = validateBeforeSubmit();
+      if (err) {
+        setFormError(err);
+        return;
+      }
       const payload = {
         hoc_vien_id: Number(studentOpt.id),
-        khoa_hoc_mau_id: Number(courseOpt.id),
+        khoa_hoc_id: khId, // phải là khóa học thực tế
+        giai_doan: giaiDoan,
+        cap_do: capDo,
+        so_buoi_khoa: soBuoi,
+        chi_nhanh_id: Number(branchOpt.id), // BIGINT
         nhan_vien_tu_van_id: staffOpt?.id ? Number(staffOpt.id) : null,
         giao_vien_id: teacherOpt?.id ? Number(teacherOpt.id) : null,
-        chi_nhanh_id: branchOpt?.id ? Number(branchOpt.id) : null,
+        ngay_dang_ky: ngayDangKy, // yyyy-MM-dd
         hoc_phi_ap_dung: parseVndInput(hocPhiText),
-        ngay_dang_ky: ngayDangKy, // yyyy-mm-dd
         ghi_chu: ghiChu || null,
       };
 
-      const created = await apiPost("/api/signups", payload);
-      setNotice(
-        `Đăng ký thành công cho học viên mới`,
-      );
-
-      if (String(listStudentId) === String(payload.hoc_vien_id)) {
-        await loadListByStudent(listStudentId);
-      }
-      await loadSummary(month);
-
-      // reset nhẹ
-      // (giữ selections để có thể tạo tiếp cho cùng học viên/chi nhánh)
-      setHocPhiText("");
+      await apiPost("/api/signups", payload);
+      setSuccessMsg("Đăng ký thành công!");
+      // reset nhẹ ghi chú
       setGhiChu("");
-    } catch (e2) {
-      setError(normalizeErr(e2));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadListByStudent(studentId) {
-    if (!studentId) return;
-    setError("");
-    try {
-      const data = await apiGet(`/api/signups?studentId=${encodeURIComponent(studentId)}`);
-      setItems(Array.isArray(data) ? data : []);
     } catch (e) {
-      setError(normalizeErr(e));
+      setFormError(fmtErr(e));
     }
   }
 
-  async function loadSummary(ym) {
-    try {
-      const data = await apiGet(`/api/signups/summary?month=${encodeURIComponent(ym)}`);
-      setSummary(data);
-    } catch (e) {
-      setError(normalizeErr(e));
-    }
-  }
-
-  function normalizeErr(err) {
-    try {
-      const msg = String(err?.message || err);
-      if (msg.startsWith("{")) {
-        const obj = JSON.parse(msg);
-        return obj.message || msg;
-      }
-      return msg;
-    } catch {
-      return String(err);
-    }
-  }
-
-  // ---------------- render ----------------
+  /* =========================== RENDER =========================== */
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+    <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl md:text-3xl font-bold">Đăng ký khóa học</h1>
-        <span className="text-sm text-gray-500">Quản lý đăng ký khóa học</span>
       </div>
 
-      {(error || notice) && (
-        <div
-          className={`border rounded-xl p-3 text-sm ${
-            error
-              ? "bg-amber-50 border-amber-300 text-amber-800"
-              : "bg-emerald-50 border-emerald-300 text-emerald-800"
-          }`}
-        >
-          {error || notice}
+      {/* banners */}
+      {successMsg && (
+        <div className="border rounded-xl p-3 text-sm bg-emerald-50 border-emerald-300 text-emerald-800">
+          {successMsg}
+        </div>
+      )}
+      {formError && (
+        <div className="border rounded-xl p-3 text-sm bg-amber-50 border-amber-300 text-amber-800">
+          {formError}
         </div>
       )}
 
-            {/* List by student */}
-      <Section
-        title="Tìm khóa học học viên"
-        right={
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              value={listStudentId}
-              onChange={(e) => setListStudentId(e.target.value)}
-              placeholder="Học viên ID"
-              className="w-40 border rounded-xl px-3 py-2"
-            />
-            <button
-              onClick={() => loadListByStudent(listStudentId)}
-              className="px-3 py-2 rounded-xl bg-slate-700 text-white hover:bg-slate-800"
-            >
-              Tải danh sách
-            </button>
-          </div>
-        }
-      >
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left bg-slate-50">
-                <th className="px-3 py-2">ID</th>
-                <th className="px-3 py-2">Ngày</th>
-                <th className="px-3 py-2">Học viên</th>
-                <th className="px-3 py-2">Khóa học</th>
-                <th className="px-3 py-2">Học phí</th>
-                <th className="px-3 py-2">Giáo viên</th>
-                <th className="px-3 py-2">NV tư vấn</th>
-                <th className="px-3 py-2">Hh</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-gray-500">
-                    Chưa có dữ liệu.
-                  </td>
-                </tr>
-              ) : (
-                items.map((r) => (
-                  <tr key={r.id} className="border-t">
-                    <td className="px-3 py-2">#{r.id}</td>
-                    <td className="px-3 py-2">{r.ngay_dang_ky}</td>
-                    <td className="px-3 py-2">{r.hoc_vien_id}</td>
-                    <td className="px-3 py-2">{r.khoa_hoc_mau_id}</td>
-                    <td className="px-3 py-2">{fmtVnd(r.hoc_phi_ap_dung)} đ</td>
-                    <td className="px-3 py-2">{r.giao_vien_id ?? "-"}</td>
-                    <td className="px-3 py-2">{r.nhan_vien_tu_van_id ?? "-"}</td>
-                    <td className="px-3 py-2 font-medium">{fmtVnd(r.hoa_hong_2pct)} đ</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Section>
-      {/* Create form */}
-      <Section
-        title="Tạo đăng ký mới"
-        right={
-          <button
-            onClick={handleCreate}
-            disabled={loading}
-            className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {loading ? "Đang xử lý..." : "Đăng ký"}
-          </button>
-        }
-      >
+      {/* Form */}
+      <div className="bg-white/80 border rounded-2xl p-4 md:p-6 shadow-sm space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Học viên</label>
@@ -582,19 +395,97 @@ export default function EnrollmentPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Khóa học</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Khóa học (thực tế)</label>
             <AsyncSearchSelect
-              value={courseOpt}
-              onChange={setCourseOpt}
-              placeholder="Chọn mẫu khoá học…"
-              fetcher={fetchCourses}
+              value={courseRealOpt}
+              onChange={setCourseRealOpt}
+              placeholder="Tìm khóa học…"
+              fetcher={fetchRealCourses}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Giáo viên (tùy chọn)
-            </label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Chi nhánh</label>
+            <AsyncSearchSelect
+              value={branchOpt}
+              onChange={setBranchOpt}
+              placeholder="Chọn chi nhánh…"
+              fetcher={fetchBranches}
+            />
+          </div>
+
+          {/* Bộ lọc bảng giá */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Giai đoạn</label>
+            <select
+              className="w-full border rounded-xl px-3 py-2 bg-white"
+              value={giaiDoan}
+              onChange={(e) => setGiaiDoan(e.target.value)}
+            >
+              {GD_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Cấp độ (Grade)</label>
+            <select
+              className="w-full border rounded-xl px-3 py-2 bg-white"
+              value={capDo}
+              onChange={(e) => setCapDo(e.target.value)}
+            >
+              {CAPDO_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Số buổi khoá</label>
+            <select
+              className="w-full border rounded-xl px-3 py-2 bg-white"
+              value={soBuoi}
+              onChange={(e) => setSoBuoi(Number(e.target.value))}
+            >
+              {[12, 16].map((n) => (
+                <option key={n} value={n}>
+                  {n} buổi
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Giá tự động */}
+          <div className="md:col-span-3">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Học phí khoá (VND)</label>
+            <input
+              readOnly
+              className="w-full border rounded-xl px-3 py-2 bg-gray-50"
+              value={
+                priceLoading
+                  ? "Đang tính giá…"
+                  : hocPhiText
+                  ? `${hocPhiText} đ`
+                  : priceError
+                  ? `⚠ ${priceError}`
+                  : ""
+              }
+            />
+            {!!hoaHongPreview && !priceLoading && !priceError && (
+              <div className="text-[11px] text-gray-500 mt-1">
+                Hoa hồng dự kiến (2%): <b>{fmtVnd(hoaHongPreview)} đ</b>
+              </div>
+            )}
+          </div>
+
+          {/* Tuỳ chọn khác */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Giáo viên (tùy chọn)</label>
             <AsyncSearchSelect
               value={teacherOpt}
               onChange={setTeacherOpt}
@@ -614,99 +505,53 @@ export default function EnrollmentPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Chi nhánh</label>
-            <AsyncSearchSelect
-              value={branchOpt}
-              onChange={setBranchOpt}
-              placeholder="Chọn chi nhánh…"
-              fetcher={fetchBranches}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Học phí (VND)</label>
-            <input
-              inputMode="numeric"
-              value={hocPhiText}
-              onChange={(e) => setHocPhiText(e.target.value)} // vẫn giữ để khi auto đổ giá cập nhật UI
-              placeholder={priceLoading ? "Đang tính giá..." : "Tự động theo bảng giá"}
-              className="w-full border rounded-xl px-3 py-2 bg-gray-50"
-              readOnly
-              disabled
-              title="Học phí tự động từ bảng giá — không cho sửa tay"
-            />
-            <div className="text-xs text-gray-500 mt-1">
-              HH dự kiến: <b>{fmtVnd(hoaHongPreview)}</b>đ
-            </div>
-            {priceLoading && <div className="text-[11px] text-gray-500 mt-1">Đang lấy học phí…</div>}
-            {priceError && !priceLoading && <div className="text-[11px] text-amber-700 mt-1">{priceError}</div>}
-          </div>
-
-          <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Ngày đăng ký</label>
             <input
               type="date"
+              className="w-full border rounded-xl px-3 py-2"
               value={ngayDangKy}
               onChange={(e) => setNgayDangKy(e.target.value)}
-              className="w-full border rounded-xl px-3 py-2"
             />
           </div>
 
-          <div className="md:col-span-2">
+          <div className="md:col-span-3">
             <label className="block text-xs font-medium text-gray-600 mb-1">Ghi chú</label>
             <input
+              className="w-full border rounded-xl px-3 py-2"
               value={ghiChu}
               onChange={(e) => setGhiChu(e.target.value)}
-              placeholder="..."
-              className="w-full border rounded-xl px-3 py-2"
+              placeholder="…"
             />
           </div>
-
-          <div className="md:col-span-1 text-xs text-gray-500">
-            Lưu ý: Hệ thống tự cộng hoa hồng <b>2%</b> cho NV tư vấn
-          </div>
         </div>
-      </Section>
-          <Section
-        title="Tổng đăng ký theo tháng"
-        right={
-          <div className="flex items-center gap-2">
-            <input
-              type="month"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className="border rounded-xl px-3 py-2"
-            />
-            <button
-              onClick={() => loadSummary(month)}
-              className="px-3 py-2 rounded-xl bg-slate-700 text-white hover:bg-slate-800"
-            >
-              Làm mới
-            </button>
-          </div>
-        }
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="border rounded-xl p-4 bg-slate-50">
-            <div className="text-xs text-gray-500">Tháng/Năm</div>
-            <div className="text-xl font-semibold">{summary?.month || month}</div>
-          </div>
-          <div className="border rounded-xl p-4 bg-slate-50">
-            <div className="text-xs text-gray-500">Tổng đăng ký</div>
-            <div className="text-xl font-semibold">{summary?.total_enrollments ?? 0}</div>
-          </div>
-          <div className="border rounded-xl p-4 bg-slate-50">
-            <div className="text-xs text-gray-500">Tổng học phí</div>
-            <div className="text-xl font-semibold">{fmtVnd(summary?.total_tuition)} đ</div>
-            <div className="text-xs text-gray-500 mt-1">
-              Phí hoa hồng: <b>{fmtVnd(summary?.total_commission_2pct)} đ</b>
-            </div>
-          </div>
+
+        <div className="flex items-center justify-end">
+          <button
+            onClick={() => {
+              const err = validateBeforeSubmit();
+              if (err) {
+                setFormError(err);
+                return;
+              }
+              setConfirmOpen(true);
+            }}
+            className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700"
+          >
+            Đăng ký
+          </button>
         </div>
-      </Section>
+      </div>
 
-
-
+      {/* Confirm */}
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Xác nhận tạo đăng ký"
+        message="Bạn muốn tạo đăng ký cho học viên này?"
+        confirmText="Tạo đăng ký"
+        cancelText="Huỷ"
+        onConfirm={submitCreate}
+        onClose={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }
